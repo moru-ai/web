@@ -1,0 +1,8 @@
+node_modules
+pnpm-lock.yaml
+dist
+build
+coverage
+.turbo
+.next
+apps/backend/convex/_generated

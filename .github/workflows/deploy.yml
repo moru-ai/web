@@ -1,0 +1,122 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+      worker: ${{ steps.filter.outputs.worker }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'apps/backend/**'
+            worker:
+              - 'apps/worker/**'
+              - '.github/workflows/deploy.yml'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+
+  deploy-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run codegen
+        run: pnpm codegen
+
+      - name: Deploy to Convex
+        run: cd apps/backend && pnpm run deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+  deploy-worker:
+    needs:
+      - detect-changes
+      - deploy-backend
+    if: |
+      always() &&
+      needs.detect-changes.outputs.worker == 'true' &&
+      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_NAME: ${{ vars.WORKER_IMAGE != '' && vars.WORKER_IMAGE || 'ghcr.io/omins/foundry-worker' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Sync docker-compose.yml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.WORKER_SERVER_HOST }}
+          username: ${{ secrets.WORKER_SERVER_USER }}
+          key: ${{ secrets.WORKER_SERVER_SSH_KEY }}
+          source: apps/worker/docker-compose.yml
+          target: ${{ secrets.WORKER_SERVER_APP_DIR }}
+          strip_components: 2
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.WORKER_SERVER_HOST }}
+          username: ${{ secrets.WORKER_SERVER_USER }}
+          key: ${{ secrets.WORKER_SERVER_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            mkdir -p "${{ secrets.WORKER_SERVER_APP_DIR }}"
+            cd "${{ secrets.WORKER_SERVER_APP_DIR }}"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker compose up -d --pull always worker
+            docker image prune -f || true

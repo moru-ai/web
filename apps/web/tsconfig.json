@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@moru/convex/_generated/api": ["../backend/convex/_generated/api"],
+      "@moru/convex/_generated/dataModel": ["../backend/convex/_generated/dataModel"],
+      "~/*": ["./app/*"]
+    },
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["node", "vite/client"],
+    "rootDirs": [".", "./.react-router/types"],
+    "jsx": "react-jsx"
+  },
+  "include": ["app", ".react-router/types", "react-router.config.ts", "vite.config.ts"]
+}

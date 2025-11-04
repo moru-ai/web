@@ -1,0 +1,4 @@
+{
+  "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile && pnpm codegen",
+  "buildCommand": "cd ../.. && cd apps/web && pnpm build"
+}

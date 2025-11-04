@@ -1,0 +1,11 @@
+# React Router generated
+.react-router
+
+# Build output
+build
+
+# Environment
+.env
+.env.local
+
+.vercel

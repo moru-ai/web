@@ -1,0 +1,70 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+build
+.turbo
+
+# Environment files
+.env
+.env.local
+.env*.local
+.envrc
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Temporary files
+.tmp
+.cache
+
+# Project specific
+references
+.codex
+.playwright*
+
+# Generated files
+apps/backend/convex/_generated/*
+apps/web/.react-router
+
+
+# TypeScript
+*.tsbuildinfo
+
+# Turbo
+.turbo
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Vercel
+.vercel
+
+# Sentry
+.sentryclirc
+
+# Playwright
+playwright-report
+test-results
+
+# Codex
+.codex

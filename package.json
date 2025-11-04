@@ -1,0 +1,45 @@
+{
+  "name": "moru",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.18.3+sha512.bbd16e6d7286fd7e01f6b3c0b3c932cda2965c06a908328f74663f10a9aea51f1129eea615134bf992831b009eabe167ecb7008b597f40ff9bc75946aadfb08d",
+  "scripts": {
+    "dev": "pnpm codegen && concurrently -n backend,web,worker -c blue,green,yellow \"pnpm dev:backend\" \"pnpm dev:web\" \"pnpm dev:worker\"",
+    "dev:backend": "pnpm --filter @moru/backend dev",
+    "dev:web": "pnpm --filter @moru/web dev",
+    "dev:worker": "pnpm --filter @moru/worker dev",
+    "build": "pnpm -r build",
+    "codegen": "pnpm --filter @moru/backend codegen",
+    "lint": "pnpm -r --parallel lint",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^8.21.0",
+    "@typescript-eslint/parser": "^8.21.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.7.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "convex": "^1.28.0"
+    }
+  }
+}

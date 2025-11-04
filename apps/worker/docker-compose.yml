@@ -1,0 +1,8 @@
+services:
+  worker:
+    image: ${WORKER_IMAGE:-ghcr.io/omins/moru-worker:latest}
+    env_file:
+      - ${WORKER_ENV_FILE:-/opt/envs/moru/worker.env}
+    ports:
+      - "${WORKER_PORT_MAPPING:-127.0.0.1:4000:4000}"
+    restart: unless-stopped

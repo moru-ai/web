@@ -1,0 +1,19 @@
+{
+  "name": "@moru/backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy",
+    "codegen": "convex codegen",
+    "build": "convex codegen",
+    "lint": "eslint convex",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "convex": "^1.28.0"
+  },
+  "devDependencies": {}
+}
