@@ -5,10 +5,12 @@ import { Button } from './button';
 import { Textarea } from './textarea';
 import { Spinner } from './spinner';
 import { RepoSelect } from '../repo-select/repo-select';
+import { BranchSelect } from '../branch-select/branch-select';
 
 export function PromptInput() {
   const fetcher = useFetcher();
   const [prompt, setPrompt] = useState('');
+  const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
 
   const isSubmitting = fetcher.state !== 'idle';
   const isSubmitDisabled = isSubmitting || prompt.trim().length === 0;
@@ -27,8 +29,11 @@ export function PromptInput() {
         className="prompt-textarea w-full resize-y border-none p-0 shadow-none focus:shadow-none focus:outline-none focus-visible:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
         disabled={isSubmitting}
       />
-      <div className="flex justify-between">
-        <RepoSelect />
+      <div className="flex justify-between gap-2">
+        <div className="flex gap-2">
+          <RepoSelect onRepoSelect={setSelectedRepo} />
+          {selectedRepo && <BranchSelect repoFullName={selectedRepo} />}
+        </div>
         <Button
           type="submit"
           size="icon"
