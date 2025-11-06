@@ -11,4 +11,5 @@ export default [
   // Resource routes for GitHub App integration
   route("api/github/callback", "routes/api.github.callback.tsx"),
   route("api/github/disconnect", "routes/api.github.disconnect.tsx"),
+  route("api/github/branches", "routes/api.github.branches.tsx"),
 ] satisfies RouteConfig;
