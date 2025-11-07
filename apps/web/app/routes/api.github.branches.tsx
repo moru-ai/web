@@ -36,11 +36,23 @@ export async function loader(args: Route.LoaderArgs) {
   const [owner, repo] = parts;
 
   try {
-    // Get user's GitHub installation
-    const installation = await client.query(api.git.getInstallationByUserId, {});
+    // Get installation by repoFullName to find the correct installation for this repository
+    const installation = await client.query(api.git.getInstallationByRepoFullName, {
+      repoFullName,
+    });
 
-    if (!installation || !installation.connected) {
-      return Response.json({ error: "No connected GitHub installation found" }, { status: 404 });
+    if (!installation) {
+      return Response.json(
+        { error: `Repository ${repoFullName} not found or not accessible` },
+        { status: 404 }
+      );
+    }
+
+    if (!installation.connected) {
+      return Response.json(
+        { error: `GitHub installation for repository ${repoFullName} is not connected` },
+        { status: 404 }
+      );
     }
 
     // Initialize Octokit App
