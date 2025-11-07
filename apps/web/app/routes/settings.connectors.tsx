@@ -1,16 +1,16 @@
-import { Suspense } from 'react';
-import { useAuth } from '@clerk/react-router';
-import { api } from '@moru/convex/_generated/api';
-import type { Doc } from '@moru/convex/_generated/dataModel';
+import { Suspense } from "react";
+import { useAuth } from "@clerk/react-router";
+import { api } from "@moru/convex/_generated/api";
+import type { Doc } from "@moru/convex/_generated/dataModel";
 import {
   Authenticated,
   AuthLoading,
   Unauthenticated,
   usePaginatedQuery,
   useQuery,
-} from 'convex/react';
-import { Await, type LoaderFunctionArgs } from 'react-router';
-import { Button } from '~/components/ui/button';
+} from "convex/react";
+import { Await, type LoaderFunctionArgs } from "react-router";
+import { Button } from "~/components/ui/button";
 import {
   Table,
   TableBody,
@@ -18,13 +18,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '~/components/ui/table';
-import { convexClientWithAuthMiddleware } from '~/middlewares/convex-client';
-import { authMiddleware } from '~/middlewares/auth-middleware';
-import type { Route } from './+types/settings.connectors';
-import { convexClientContext } from '~/contexts/convex-client';
+} from "~/components/ui/table";
+import { convexClientWithAuthMiddleware } from "~/middlewares/convex-client";
+import { authMiddleware } from "~/middlewares/auth-middleware";
+import type { Route } from "./+types/settings.connectors";
+import { convexClientContext } from "~/contexts/convex-client";
 type InstallationConnection = {
-  status: 'connected' | 'disconnected';
+  status: "connected" | "disconnected";
   installation?: { installationId: string; accountLogin: string };
 };
 type LoaderData = {
@@ -53,10 +53,10 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
 function GitHubCard({ connection }: { connection: InstallationConnection }) {
   const { userId } = useAuth();
   if (!userId) {
-    throw new Error('GitHubCard rendered without an authenticated user.');
+    throw new Error("GitHubCard rendered without an authenticated user.");
   }
 
-  const connected = connection.status === 'connected' && Boolean(connection.installation);
+  const connected = connection.status === "connected" && Boolean(connection.installation);
   const installation = connection.installation as
     | { installationId: string; accountLogin: string }
     | undefined;
@@ -65,19 +65,19 @@ function GitHubCard({ connection }: { connection: InstallationConnection }) {
 
   const slug = import.meta.env.VITE_GITHUB_APP_SLUG as string | undefined;
   const clientRedirectTo =
-    (import.meta.env.VITE_GITHUB_CLIENT_REDIRECT_TO as string) || '/settings';
+    (import.meta.env.VITE_GITHUB_CLIENT_REDIRECT_TO as string) || "/settings";
   const installUrl = slug ? `https://github.com/apps/${slug}/installations/new` : undefined;
 
   // Load repos for the current installation (first page)
   const { results, status, loadMore } = usePaginatedQuery(
     api.git.listReposByInstallation,
-    installationId ? { installationId } : 'skip',
+    installationId ? { installationId } : "skip",
     { initialNumItems: 10 },
   );
-  const canLoadMore = status === 'CanLoadMore';
-  const isLoadingMore = status === 'LoadingMore';
+  const canLoadMore = status === "CanLoadMore";
+  const isLoadingMore = status === "LoadingMore";
   const showLoadMore = canLoadMore || isLoadingMore;
-  const isInitialLoading = status === 'LoadingFirstPage';
+  const isInitialLoading = status === "LoadingFirstPage";
 
   return (
     <div className="border-border bg-card/50 rounded-lg border p-5">
@@ -85,7 +85,9 @@ function GitHubCard({ connection }: { connection: InstallationConnection }) {
         <div>
           <h3 className="text-lg font-semibold">GitHub</h3>
           <p className="text-muted-foreground mt-1 text-sm">
-            {accountLogin ? `Connected as @${accountLogin}` : 'Connect your GitHub App to fetch repositories.'}
+            {accountLogin
+              ? `Connected as @${accountLogin}`
+              : "Connect your GitHub App to fetch repositories."}
           </p>
         </div>
         {connected ? (
@@ -124,7 +126,7 @@ function GitHubCard({ connection }: { connection: InstallationConnection }) {
                     ? `https://github.com/apps/${slug}/installations/select_target?state=${encodeURIComponent(
                         JSON.stringify({ client_redirect_to: clientRedirectTo }),
                       )}`
-                    : 'https://github.com/apps'
+                    : "https://github.com/apps"
                 }
                 target="_blank"
                 rel="noreferrer"
@@ -138,9 +140,9 @@ function GitHubCard({ connection }: { connection: InstallationConnection }) {
               className="bg-red-600 text-white hover:bg-red-500"
               onClick={async () => {
                 if (!installationId) return;
-                const res = await fetch('/api/github/disconnect', {
-                  method: 'POST',
-                  headers: { 'content-type': 'application/json' },
+                const res = await fetch("/api/github/disconnect", {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
                   body: JSON.stringify({ installationId }),
                 });
                 if (res.ok) {
@@ -148,7 +150,7 @@ function GitHubCard({ connection }: { connection: InstallationConnection }) {
                   window.location.reload();
                 } else {
                   const text = await res.text();
-                  alert(text || 'Failed to disconnect');
+                  alert(text || "Failed to disconnect");
                 }
               }}
             >
@@ -168,9 +170,9 @@ function GitHubCard({ connection }: { connection: InstallationConnection }) {
               size="sm"
               onClick={async () => {
                 if (!installationId) return;
-                await fetch('/api/github/refresh', {
-                  method: 'POST',
-                  headers: { 'content-type': 'application/json' },
+                await fetch("/api/github/refresh", {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
                   body: JSON.stringify({ installationId }),
                 });
               }}
@@ -199,14 +201,14 @@ function GitHubCard({ connection }: { connection: InstallationConnection }) {
                     </TableCell>
                   </TableRow>
                 ) : (results ?? []).length > 0 ? (
-                  (results ?? []).map((r: Doc<'remote_repositories'>) => (
+                  (results ?? []).map((r: Doc<"remote_repositories">) => (
                     <TableRow key={r._id}>
                       <TableCell className="text-foreground font-medium">{r.fullName}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {r.visibility ?? (r.private ? 'private' : 'public')}
+                        {r.visibility ?? (r.private ? "private" : "public")}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {r.defaultBranch ?? '-'}
+                        {r.defaultBranch ?? "-"}
                       </TableCell>
                     </TableRow>
                   ))
@@ -223,7 +225,7 @@ function GitHubCard({ connection }: { connection: InstallationConnection }) {
           {showLoadMore ? (
             <div className="mt-3 flex justify-center">
               <Button disabled={!canLoadMore} onClick={() => loadMore(10)}>
-                {isLoadingMore ? 'Loading...' : 'Load More'}
+                {isLoadingMore ? "Loading..." : "Load More"}
               </Button>
             </div>
           ) : null}
@@ -285,9 +287,7 @@ function ConnectGitHubCard() {
             <a href={installUrl}>Connect GitHub App</a>
           </Button>
         ) : (
-          <span className="text-sm text-amber-400">
-            Set VITE_GITHUB_APP_SLUG to enable Connect
-          </span>
+          <span className="text-sm text-amber-400">Set VITE_GITHUB_APP_SLUG to enable Connect</span>
         )}
       </div>
     </div>
@@ -296,7 +296,7 @@ function ConnectGitHubCard() {
 
 export default function ConnectorsPage({ loaderData }: { loaderData: LoaderData }) {
   const { githubInstallations } = loaderData;
-  const liveConnections = useQuery(api.git.listInstallationsForUser, 'skip') as
+  const liveConnections = useQuery(api.git.listInstallationsForUser, "skip") as
     | InstallationConnection[]
     | undefined;
 
@@ -319,7 +319,10 @@ export default function ConnectorsPage({ loaderData }: { loaderData: LoaderData 
               return (
                 <>
                   {effectiveConnections.map((connection, index) => (
-                    <GitHubCard key={connection.installation?.installationId ?? index} connection={connection} />
+                    <GitHubCard
+                      key={connection.installation?.installationId ?? index}
+                      connection={connection}
+                    />
                   ))}
                 </>
               );
