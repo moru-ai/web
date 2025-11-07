@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Check, ChevronDown } from "lucide-react";
 import { ErrorBoundary, Suspense } from "@suspensive/react";
@@ -89,6 +89,12 @@ function BranchListError({ error }: { error: Error }) {
 export function BranchSelect({ repoFullName }: BranchSelectProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+
+  // Reset branch selection when repository changes
+  useEffect(() => {
+    setValue("");
+    setOpen(false);
+  }, [repoFullName]);
 
   if (!repoFullName) {
     return null;
