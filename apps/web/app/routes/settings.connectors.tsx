@@ -50,26 +50,18 @@ export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
   return { githubInstallations };
 }
 
-function GitHubCard({ connections }: { connections: InstallationConnection[] | undefined }) {
+function GitHubCard({ connection }: { connection: InstallationConnection }) {
   const { userId } = useAuth();
   if (!userId) {
     throw new Error('GitHubCard rendered without an authenticated user.');
   }
 
-  const liveConnections = useQuery(api.git.listInstallationsForUser, 'skip') as
-    | InstallationConnection[]
-    | undefined;
-
-  const effectiveConnections = liveConnections ?? connections ?? [];
-
-  const connectedConnection = Array.isArray(effectiveConnections)
-    ? effectiveConnections.find((c) => c?.status === 'connected' && c?.installation)
-    : undefined;
-  const connected = Boolean(connectedConnection);
-  const installation = connectedConnection?.installation as
+  const connected = connection.status === 'connected' && Boolean(connection.installation);
+  const installation = connection.installation as
     | { installationId: string; accountLogin: string }
     | undefined;
   const installationId = installation?.installationId;
+  const accountLogin = installation?.accountLogin;
 
   const slug = import.meta.env.VITE_GITHUB_APP_SLUG as string | undefined;
   const clientRedirectTo =
@@ -93,7 +85,7 @@ function GitHubCard({ connections }: { connections: InstallationConnection[] | u
         <div>
           <h3 className="text-lg font-semibold">GitHub</h3>
           <p className="text-muted-foreground mt-1 text-sm">
-            Connect your GitHub App to fetch repositories.
+            {accountLogin ? `Connected as @${accountLogin}` : 'Connect your GitHub App to fetch repositories.'}
           </p>
         </div>
         {connected ? (
@@ -270,8 +262,43 @@ function GitHubCardError() {
   );
 }
 
+function ConnectGitHubCard() {
+  const slug = import.meta.env.VITE_GITHUB_APP_SLUG as string | undefined;
+  const installUrl = slug ? `https://github.com/apps/${slug}/installations/new` : undefined;
+
+  return (
+    <div className="border-border bg-card/50 rounded-lg border p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">GitHub</h3>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Connect your GitHub App to fetch repositories.
+          </p>
+        </div>
+        <span className="border-failed bg-failed/15 text-failed rounded-full border px-2.5 py-1 text-xs font-medium">
+          Not connected
+        </span>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {installUrl ? (
+          <Button asChild className="text-background">
+            <a href={installUrl}>Connect GitHub App</a>
+          </Button>
+        ) : (
+          <span className="text-sm text-amber-400">
+            Set VITE_GITHUB_APP_SLUG to enable Connect
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ConnectorsPage({ loaderData }: { loaderData: LoaderData }) {
   const { githubInstallations } = loaderData;
+  const liveConnections = useQuery(api.git.listInstallationsForUser, 'skip') as
+    | InstallationConnection[]
+    | undefined;
 
   return (
     <div className="space-y-6">
@@ -282,13 +309,21 @@ export default function ConnectorsPage({ loaderData }: { loaderData: LoaderData 
         </AuthLoading>
         <Suspense fallback={<GitHubCardSkeleton />}>
           <Await resolve={githubInstallations} errorElement={<GitHubCardError />}>
-            {(connections: InstallationConnection[] | null | undefined) =>
-              connections !== null && connections !== undefined ? (
-                <GitHubCard connections={connections} />
-              ) : (
-                <GitHubCardSkeleton />
-              )
-            }
+            {(connections: InstallationConnection[] | null | undefined) => {
+              const effectiveConnections = liveConnections ?? connections ?? [];
+
+              if (effectiveConnections.length === 0) {
+                return <ConnectGitHubCard />;
+              }
+
+              return (
+                <>
+                  {effectiveConnections.map((connection, index) => (
+                    <GitHubCard key={connection.installation?.installationId ?? index} connection={connection} />
+                  ))}
+                </>
+              );
+            }}
           </Await>
         </Suspense>
       </Authenticated>
