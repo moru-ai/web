@@ -1,11 +1,44 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const commonMetadata = v.optional(v.record(v.string(), v.any()));
+
+const contentText = v.object({
+  contentType: v.literal("text"),
+  parts: v.array(v.string()),
+  metadata: commonMetadata,
+});
+
 export default defineSchema({
   tasks: defineTable({
-    text: v.string(),
-    completed: v.optional(v.boolean()),
-    isCompleted: v.optional(v.boolean()),
+    title: v.optional(v.string()),
+    repo: v.id("remote_repositories"),
+    branch: v.string(),
+    status: v.union(
+      v.literal("initializing"),
+      v.literal("idle"),
+      v.literal("in_progress"),
+      v.literal("success"),
+      v.literal("error"),
+    ),
+    metadata: commonMetadata,
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  }),
+
+  task_messages: defineTable({
+    task: v.id("tasks"),
+    parent: v.union(v.id("task_messages"), v.null()),
+    children: v.array(v.id("task_messages")),
+    content: v.union(contentText),
+    author: v.object({
+      role: v.union(v.literal("system"), v.literal("assistant"), v.literal("user")),
+      name: v.union(v.string(), v.null()),
+      metadata: commonMetadata,
+    }),
+    metadata: commonMetadata,
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   }),
 
   // GitHub App integration tables (system of record)
