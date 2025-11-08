@@ -6,33 +6,13 @@ on:
       - main
 
 jobs:
-  detect-changes:
+  deploy:
     runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      web: ${{ steps.filter.outputs.web }}
-      worker: ${{ steps.filter.outputs.worker }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check changed paths
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'apps/backend/**'
-            worker:
-              - 'apps/worker/**'
-              - '.github/workflows/deploy.yml'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
-
-  deploy-backend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_NAME: ${{ vars.WORKER_IMAGE != '' && vars.WORKER_IMAGE || 'ghcr.io/moru-ai/worker' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,28 +37,10 @@ jobs:
       - name: Run codegen
         run: pnpm codegen
 
-      - name: Deploy to Convex
+      - name: Deploy Convex backend
         run: cd apps/backend && pnpm run deploy
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-
-  deploy-worker:
-    needs:
-      - detect-changes
-      - deploy-backend
-    if: |
-      always() &&
-      needs.detect-changes.outputs.worker == 'true' &&
-      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    env:
-      IMAGE_NAME: ${{ vars.WORKER_IMAGE != '' && vars.WORKER_IMAGE || 'ghcr.io/moru-ai/worker' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -107,7 +69,7 @@ jobs:
           target: ${{ secrets.WORKER_SERVER_APP_DIR }}
           strip_components: 2
 
-      - name: Deploy on EC2
+      - name: Deploy worker on EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.WORKER_SERVER_HOST }}
