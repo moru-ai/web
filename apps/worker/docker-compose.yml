@@ -1,6 +1,6 @@
 services:
   worker:
-    image: ${WORKER_IMAGE:-ghcr.io/omins/moru-worker:latest}
+    image: ${WORKER_IMAGE:-ghcr.io/moru-ai/worker:latest}
     env_file:
       - ${WORKER_ENV_FILE:-/opt/envs/moru/worker.env}
     ports:

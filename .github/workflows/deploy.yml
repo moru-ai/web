@@ -75,7 +75,7 @@ jobs:
       contents: read
       packages: write
     env:
-      IMAGE_NAME: ${{ vars.WORKER_IMAGE != '' && vars.WORKER_IMAGE || 'ghcr.io/omins/foundry-worker' }}
+      IMAGE_NAME: ${{ vars.WORKER_IMAGE != '' && vars.WORKER_IMAGE || 'ghcr.io/moru-ai/worker' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
