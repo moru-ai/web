@@ -14,6 +14,7 @@ export default defineSchema({
     title: v.optional(v.string()),
     repo: v.id("remote_repositories"),
     branch: v.string(),
+    userId: v.string(),
     status: v.union(
       v.literal("initializing"),
       v.literal("idle"),

@@ -19,6 +19,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 
 interface BranchSelectProps {
   repoFullName: string | null;
+  onSelect?: (branchName: string | null) => void;
 }
 
 interface Branch {
@@ -86,7 +87,7 @@ function BranchListError({ error }: { error: Error }) {
   );
 }
 
-export function BranchSelect({ repoFullName }: BranchSelectProps) {
+export function BranchSelect({ repoFullName, onSelect }: BranchSelectProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
 
@@ -94,7 +95,8 @@ export function BranchSelect({ repoFullName }: BranchSelectProps) {
   useEffect(() => {
     setValue("");
     setOpen(false);
-  }, [repoFullName]);
+    onSelect?.(null);
+  }, [repoFullName, onSelect]);
 
   if (!repoFullName) {
     return null;
@@ -103,6 +105,7 @@ export function BranchSelect({ repoFullName }: BranchSelectProps) {
   const handleSelect = (branchName: string | null) => {
     setValue(branchName || "");
     setOpen(false);
+    onSelect?.(branchName);
   };
 
   return (

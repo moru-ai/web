@@ -16,17 +16,24 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { Spinner } from "~/components/ui/spinner";
 import { api } from "@moru/convex/_generated/api";
+import type { Doc, Id } from "@moru/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 
 interface RepoSelectProps {
-  onRepoSelect?: (repoFullName: string | null) => void;
+  onSelect?: (repository: Doc<"remote_repositories"> | null) => void;
 }
 
-type RepoSelectHandler = RepoSelectProps["onRepoSelect"];
+type RepoSelectHandler = RepoSelectProps["onSelect"];
 type RepoSelectHandlerFn = NonNullable<RepoSelectHandler>;
 
-function RepoListContent({ value, onSelect }: { value: string; onSelect: RepoSelectHandlerFn }) {
+function RepoListContent({
+  value,
+  onSelect,
+}: {
+  value: Id<"remote_repositories"> | null;
+  onSelect: RepoSelectHandlerFn;
+}) {
   const { data: repositories } = useSuspenseQuery(convexQuery(api.git.listRepositories, {}));
 
   return (
@@ -35,16 +42,16 @@ function RepoListContent({ value, onSelect }: { value: string; onSelect: RepoSel
       <CommandGroup>
         {repositories.map((repository) => (
           <CommandItem
-            key={repository.fullName}
-            value={repository.fullName}
-            onSelect={(currentValue) => {
-              const newValue = currentValue === value ? "" : currentValue;
-              onSelect(newValue || null);
+            key={repository._id}
+            value={repository._id}
+            onSelect={() => {
+              const isSameRepo = repository._id === value;
+              onSelect(isSameRepo ? null : repository);
             }}
           >
             {repository.name}
             <Check
-              className={cn("ml-auto", value === repository.fullName ? "opacity-100" : "opacity-0")}
+              className={cn("ml-auto", value === repository._id ? "opacity-100" : "opacity-0")}
             />
           </CommandItem>
         ))}
@@ -61,26 +68,25 @@ function RepoListError({ error }: { error: Error }) {
   );
 }
 
-function RepoSelectTrigger({ value }: { value: string }) {
+function RepoSelectTrigger({ value }: { value: Id<"remote_repositories"> | null }) {
   const { data: repositories } = useSuspenseQuery(convexQuery(api.git.listRepositories, {}));
+  const selected = repositories.find((repository) => repository._id === value);
 
   return (
     <span className="overflow-hidden text-ellipsis">
-      {value
-        ? repositories.find((repository) => repository.fullName === value)?.name
-        : "Select repository..."}
+      {selected ? selected.name : "Select repository..."}
     </span>
   );
 }
 
-export function RepoSelect({ onRepoSelect }: RepoSelectProps) {
+export function RepoSelect({ onSelect }: RepoSelectProps) {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState<Id<"remote_repositories"> | null>(null);
 
-  const handleSelect: RepoSelectHandlerFn = (repoFullName) => {
-    setValue(repoFullName || "");
+  const handleSelect: RepoSelectHandlerFn = (repository) => {
+    setValue(repository?._id ?? null);
     setOpen(false);
-    onRepoSelect?.(repoFullName);
+    onSelect?.(repository);
   };
 
   return (
