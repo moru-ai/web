@@ -167,9 +167,9 @@ docs: document deployment workflow
 ## Deployment
 
 - Auto-deploys on push to `main`. Do not deploy manually.
-- **Convex backend**: `.github/workflows/deploy.yml` runs on every push to `main` when backend code changes. It installs deps, runs `pnpm codegen` to refresh `_generated` artifacts, and executes `pnpm run deploy` in `apps/backend` with `CONVEX_DEPLOY_KEY`.
+- **Convex backend**: `.github/workflows/deploy.yml` runs on every push to `main`. It installs deps, runs `pnpm codegen` to refresh `_generated` artifacts, and executes `pnpm run deploy` in `apps/backend` with `CONVEX_DEPLOY_KEY`.
 - **Web app**: Vercel builds and deploys automatically on pushes to `main`. Manage build settings/routes in `apps/web/vercel.json`; the install command now runs `pnpm codegen` so backend artifacts stay fresh before the web build. No manual Vercel deploys needed.
-- **Worker**: The same workflow includes `deploy-worker`, which builds the image from `apps/worker/Dockerfile`, pushes to GHCR, uploads `apps/worker/docker-compose.yml` to `${{ secrets.WORKER_SERVER_APP_DIR }}`, and runs `docker compose up -d --pull always worker` on the EC2 host. Configure `WORKER_SERVER_HOST`, `WORKER_SERVER_USER`, `WORKER_SERVER_SSH_KEY`, and `WORKER_SERVER_APP_DIR` secrets; optionally set repository variable `WORKER_IMAGE` (base image name without tag). No manual SSH/compose steps needed.
+- **Worker**: The same job immediately builds the worker image after the backend deploy completes, reusing the fresh Convex artifacts. It pushes the image to GHCR, uploads `apps/worker/docker-compose.yml` to `${{ secrets.WORKER_SERVER_APP_DIR }}`, and runs `docker compose up -d --pull always worker` on the EC2 host. Configure `WORKER_SERVER_HOST`, `WORKER_SERVER_USER`, `WORKER_SERVER_SSH_KEY`, and `WORKER_SERVER_APP_DIR` secrets; optionally set repository variable `WORKER_IMAGE` (base image name without tag). No manual SSH/compose steps needed.
 
 ## Common Tasks
 
