@@ -13,6 +13,7 @@ jobs:
       packages: write
     env:
       IMAGE_NAME: ${{ vars.WORKER_IMAGE != '' && vars.WORKER_IMAGE || 'ghcr.io/moru-ai/worker' }}
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,8 +40,6 @@ jobs:
 
       - name: Deploy Convex backend
         run: cd apps/backend && pnpm run deploy
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
