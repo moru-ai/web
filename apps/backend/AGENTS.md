@@ -65,19 +65,19 @@ These claims are included in the Clerk JWT used by Convex. Ensure your Clerk JWT
 
 ### Getting the current user in Convex
 
-Use `ctx.auth.getUserIdentity()` in queries/mutations. The returned identity mirrors the Clerk JWT claims above (e.g., `identity.email`). Always handle the unauthenticated case.
+Always call the shared helper `getUserIdentityOrThrow` from `apps/backend/convex/auth.helper.ts` whenever a query, mutation, or action requires authentication. It wraps `ctx.auth.getUserIdentity()` and throws an `UnauthenticatedError` so downstream logic stays clean and we provide consistent error semantics across modules.
 
-Example (replace table/fields to match your schema):
+Example usage (replace table/fields to match your schema):
 
 ```ts
+import { query } from "./_generated/server";
+import { getUserIdentityOrThrow } from "./auth.helper";
+
 export const getForCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (identity === null) {
-      throw new Error("Not authenticated");
-    }
-    return await ctx.db
+    const identity = await getUserIdentityOrThrow(ctx);
+    return ctx.db
       .query("messages")
       .filter((q) => q.eq(q.field("author"), identity.email))
       .collect();
@@ -87,8 +87,8 @@ export const getForCurrentUser = query({
 
 Notes:
 
-- Prefer `identity.email` as a human-friendly identifier when present; for immutable IDs use `identity.subject` (Clerk `user.id`).
-- Ensure routes requiring auth enforce it at the query/mutation boundary; do not trust client-provided user IDs.
+- The helper returns the same Clerk identity object; prefer `identity.email` as a human-friendly identifier and `identity.subject` for immutable IDs.
+- Use the helper at the top of every authenticated query/mutation/action—never trust client-provided user IDs.
 
 ## References
 
