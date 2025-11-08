@@ -2,7 +2,7 @@ import { ClerkProvider, SignedIn, UserButton } from '@clerk/react-router';
 import { useAuth } from '@clerk/react-router';
 import { rootAuthLoader, clerkMiddleware, getAuth, clerkClient } from '@clerk/react-router/server';
 import { dark } from '@clerk/themes';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { Authenticated, ConvexReactClient } from 'convex/react';
 import { ConvexQueryClient } from '@convex-dev/react-query';
@@ -20,6 +20,8 @@ import {
 
 import stylesheet from './app.css?url';
 import type { Route } from './+types/root';
+import { Toaster } from './components/ui/sonner';
+import { useColorScheme } from './hooks/useColorScheme';
 
 export const links: Route.LinksFunction = () => [
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -86,47 +88,14 @@ export function Layout({ children }: { children: ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <Toaster />
       </body>
     </html>
   );
 }
 
-type ColorScheme = 'light' | 'dark';
-
-const getPreferredScheme = (): ColorScheme =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
-
-function useSystemColorScheme(): ColorScheme {
-  const [scheme, setScheme] = useState<ColorScheme>(() => getPreferredScheme());
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setScheme(event.matches ? 'dark' : 'light');
-    };
-
-    setScheme(mediaQuery.matches ? 'dark' : 'light');
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-
-    mediaQuery.addListener(handleChange);
-    return () => mediaQuery.removeListener(handleChange);
-  }, []);
-
-  return scheme;
-}
-
 export default function App({ loaderData }: Route.ComponentProps) {
-  const systemScheme = useSystemColorScheme();
+  const systemScheme = useColorScheme();
   const appearance = useMemo(
     () => (systemScheme === 'dark' ? { baseTheme: dark } : undefined),
     [systemScheme],

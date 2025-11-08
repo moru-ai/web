@@ -32,6 +32,7 @@
 - Monochrome UI: Black/white/gray palette only across the app.
 - System theme: Respect `prefers-color-scheme`; no explicit theme switcher.
 - Implementation lives in `app/app.css` using CSS variables and a dark-mode media query.
+- Components that need to read the current scheme should call `useColorScheme` (`app/hooks/useColorScheme`) instead of browser-global checks or third-party theme providers.
 - Allowed color accents: green for positive/success and red for destructive actions/statuses (e.g., GitHub "Connected" badge and "Disconnect" button).
 - When styling components, prefer tokens over raw colors:
   - Backgrounds: `bg-background`, `bg-card`, `bg-popover`
