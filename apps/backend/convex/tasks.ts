@@ -46,12 +46,9 @@ export const createTask = mutation({
 
 export const listTasksForUser = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity?.id) {
-      return [];
-    }
+    const identity = await getUserIdentityOrThrow(ctx);
+    const userId = identity.id as string;
 
-    const userId = identity.id;
     const tasks = await ctx.db
       .query("tasks")
       .filter((q) => q.eq(q.field("userId"), userId))
