@@ -51,6 +51,35 @@ export const getInstallationByUserId = query({
   },
 });
 
+export const getInstallationByRepoFullName = query({
+  args: {
+    repoFullName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await getUserIdentityOrThrow(ctx);
+    const userId = identity.id as string;
+
+    // Find repository by fullName and userId
+    const repository = await ctx.db
+      .query('remote_repositories')
+      .withIndex('by_fullName', (q) => q.eq('fullName', args.repoFullName))
+      .filter((f) => f.eq(f.field('userId'), userId))
+      .first();
+
+    if (!repository) {
+      return null;
+    }
+
+    // Get installation by installationId
+    const installation = await ctx.db
+      .query('github_installations')
+      .withIndex('by_installationId', (q) => q.eq('installationId', repository.installationId))
+      .unique();
+
+    return installation;
+  },
+});
+
 export const listReposByInstallation = query({
   args: {
     installationId: v.string(),
