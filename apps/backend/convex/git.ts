@@ -16,6 +16,7 @@ export const listInstallationsForUser = query({
       .collect();
 
     const results = [] as Array<{
+      provider: 'github';
       connectionId: string;
       status: 'connected' | 'disconnected';
       selectedRepoFullName: string | null | undefined;
@@ -29,6 +30,7 @@ export const listInstallationsForUser = query({
 
     for (const inst of installs) {
       results.push({
+        provider: 'github',
         connectionId: inst._id as unknown as string,
         status: inst.connected ? 'connected' : 'disconnected',
         selectedRepoFullName: null,
