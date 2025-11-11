@@ -98,3 +98,7 @@ export function JobsList() {
 
 - Route loaders can call Convex via `ConvexHttpClient` and return unresolved Promises. Pair the loader result with `<Suspense>` + `<Await>` to show skeleton UI immediately while the promise resolves.
 - For auth-gated screens, combine `<AuthLoading>` with the same skeleton component to avoid blank flashes while Clerk hydrates.
+
+## Settings Connectors
+
+- Settings → Connectors renders one card per provider and now sources repository lists from the aggregated `api.git.listRepositories` query, so backend changes to that query require regenerating Convex types before touching the UI.

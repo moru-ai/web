@@ -65,7 +65,6 @@ High-level responsibilities only — see per-module AGENTS.md for details.
 
 - Renders chat UI, diff viewer, and PR flows; consumes Convex APIs.
 - Details: `apps/web/AGENTS.md`.
-- Settings → Connectors renders one card per provider and now sources repository lists from the aggregated `api.git.listRepositories` query, so backend changes to that query require regenerating Convex types before touching the UI.
 
 ### apps/worker/ (Worker Service)
 
