@@ -41,6 +41,21 @@ export const listInstallationsForUser = query({
   },
 });
 
+export const getGithubInstallation = query({
+  handler: async (ctx) => {
+    const identity = await getUserIdentityOrThrow(ctx);
+    const userId = identity.id as string;
+
+    const installation = await ctx.db
+      .query('github_installations')
+      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .filter((f) => f.eq(f.field('connected'), true))
+      .first();
+
+    return installation ?? null;
+  },
+});
+
 export const getInstallationByUserId = query({
   handler: async (ctx) => {
     const identity = await getUserIdentityOrThrow(ctx);

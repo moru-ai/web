@@ -1,9 +1,8 @@
-import { Suspense } from "react";
-import { useAuth } from "@clerk/react-router";
+import { ErrorBoundary, Suspense } from "@suspensive/react";
 import { api } from "@moru/convex/_generated/api";
 import type { Doc } from "@moru/convex/_generated/dataModel";
-import { Authenticated, AuthLoading, Unauthenticated, useQuery } from "convex/react";
-import { Await, type LoaderFunctionArgs } from "react-router";
+import { convexQuery } from "@convex-dev/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "~/components/ui/button";
 import {
   Table,
@@ -13,69 +12,33 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { convexClientWithAuthMiddleware } from "~/middlewares/convex-client";
 import { authMiddleware } from "~/middlewares/auth-middleware";
 import type { Route } from "./+types/settings.connectors";
-import { convexClientContext } from "~/contexts/convex-client";
-type RepositoryProvider = Doc<"remote_repositories">["provider"];
-type InstallationConnection = {
-  provider: RepositoryProvider;
-  status: "connected" | "disconnected";
-  installation?: { installationId: string; accountLogin: string };
-};
-type LoaderData = {
-  githubInstallations:
-    | Promise<InstallationConnection[] | undefined>
-    | InstallationConnection[]
-    | null;
-};
 
-export const middleware: Route.MiddlewareFunction[] = [
-  authMiddleware,
-  convexClientWithAuthMiddleware,
-];
+type GithubInstallation = Doc<"github_installations">;
 
-export async function loader(args: LoaderFunctionArgs): Promise<LoaderData> {
-  const { context } = args;
+const githubAppSlug = import.meta.env.VITE_GITHUB_APP_SLUG as string | undefined;
+const githubClientRedirectTo =
+  (import.meta.env.VITE_GITHUB_CLIENT_REDIRECT_TO as string) || "/settings";
 
-  const client = context.get(convexClientContext);
-  const githubInstallations = client.query(api.git.listInstallationsForUser) as Promise<
-    InstallationConnection[] | undefined
-  >;
+export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
-  return { githubInstallations };
+export default function ConnectorsPage() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Connectors</h1>
+      <ErrorBoundary fallback={GitHubCardError}>
+        <Suspense fallback={<GitHubCardSkeleton />}>
+          <GitHubCard />
+        </Suspense>
+      </ErrorBoundary>
+    </div>
+  );
 }
 
-function GitHubCard({
-  connections,
-  repositories,
-}: {
-  connections: InstallationConnection[];
-  repositories: Doc<"remote_repositories">[] | undefined;
-}) {
-  const { userId } = useAuth();
-  if (!userId) {
-    throw new Error("GitHubCard rendered without an authenticated user.");
-  }
-
-  const slug = import.meta.env.VITE_GITHUB_APP_SLUG as string | undefined;
-  const clientRedirectTo =
-    (import.meta.env.VITE_GITHUB_CLIENT_REDIRECT_TO as string) || "/settings";
-  const installUrl = slug ? `https://github.com/apps/${slug}/installations/new` : undefined;
-
-  const connectedInstallation =
-    connections.find((conn) => conn.status === "connected" && conn.installation) ?? connections[0];
-  const installation = connectedInstallation?.installation as
-    | { installationId: string; accountLogin: string }
-    | undefined;
-  const installationId = installation?.installationId;
-  const connected = Boolean(
-    connectedInstallation?.status === "connected" && connectedInstallation.installation,
-  );
-
-  const providerRepositories =
-    repositories?.filter((repo) => repo.provider === "github") ?? [];
-  const isRepositoryLoading = repositories === undefined;
+function GitHubCard() {
+  const { data: installation } = useSuspenseQuery(convexQuery(api.git.getGithubInstallation, {}));
+  const connected = Boolean(installation);
 
   return (
     <div className="border-border bg-card/50 rounded-lg border p-5">
@@ -96,125 +59,168 @@ function GitHubCard({
           </span>
         )}
       </div>
+      {installation ? <GithubConnected installation={installation} /> : <GithubNotConnected />}
+    </div>
+  );
+}
+
+function GithubConnected({ installation }: { installation: GithubInstallation }) {
+  const installationId = installation.installationId;
+  const slug = githubAppSlug;
+  const clientRedirectTo = githubClientRedirectTo;
+
+  return (
+    <>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        {connected ? (
-          <>
-            <Button
-              asChild
-              variant="outline"
-              className="border-foreground/40 text-foreground hover:bg-foreground/10 focus-visible:bg-foreground/10"
-            >
-              <a
-                href={
-                  slug
-                    ? `https://github.com/apps/${slug}/installations/select_target?state=${encodeURIComponent(
-                        JSON.stringify({ client_redirect_to: clientRedirectTo }),
-                      )}`
-                    : "https://github.com/apps"
-                }
-                target="_blank"
-                rel="noreferrer"
-              >
-                Settings
-              </a>
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              className="bg-red-600 text-white hover:bg-red-500"
-              onClick={async () => {
-                if (!installationId) return;
-                const res = await fetch("/api/github/disconnect", {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ installationId }),
-                });
-                if (res.ok) {
-                  // refresh UI
-                  window.location.reload();
-                } else {
-                  const text = await res.text();
-                  alert(text || "Failed to disconnect");
-                }
-              }}
-            >
-              Disconnect
-            </Button>
-          </>
-        ) : installUrl ? (
-          <Button asChild className="text-background">
-            <a href={installUrl}>Connect GitHub App</a>
-          </Button>
-        ) : (
-          <span className="text-sm text-amber-400">Set VITE_GITHUB_APP_SLUG to enable Connect</span>
-        )}
+        <Button
+          asChild
+          variant="outline"
+          className="border-foreground/40 text-foreground hover:bg-foreground/10 focus-visible:bg-foreground/10"
+        >
+          <a
+            href={
+              slug
+                ? `https://github.com/apps/${slug}/installations/select_target?state=${encodeURIComponent(
+                    JSON.stringify({ client_redirect_to: clientRedirectTo }),
+                  )}`
+                : "https://github.com/apps"
+            }
+            target="_blank"
+            rel="noreferrer"
+          >
+            Settings
+          </a>
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          className="bg-red-600 text-white hover:bg-red-500"
+          onClick={async () => {
+            if (!installationId) return;
+            const res = await fetch("/api/github/disconnect", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ installationId }),
+            });
+            if (res.ok) {
+              window.location.reload();
+            } else {
+              const text = await res.text();
+              alert(text || "Failed to disconnect");
+            }
+          }}
+        >
+          Disconnect
+        </Button>
       </div>
-      {/* Installation metadata intentionally hidden per UX request */}
-      {connected ? (
-        <div className="mt-6">
-          <div className="mb-2 flex items-center justify-between">
-            <h4 className="text-muted-foreground text-sm font-semibold">Repositories</h4>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={!installationId}
-              onClick={async () => {
-                if (!installationId) return;
-                await fetch("/api/github/refresh", {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ installationId }),
-                });
-              }}
-            >
-              Refresh
-            </Button>
-          </div>
-          <div className="border-border overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader className="bg-card/50">
-                <TableRow>
-                  <TableHead className="px-3">Repository</TableHead>
-                  <TableHead className="px-3">Visibility</TableHead>
-                  <TableHead className="px-3">Default Branch</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isRepositoryLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="py-6">
-                      <div className="space-y-3">
-                        <div className="bg-foreground/10 h-4 w-48 rounded" />
-                        <div className="bg-foreground/10 h-4 w-40 rounded" />
-                        <div className="bg-foreground/10 h-4 w-32 rounded" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : providerRepositories.length > 0 ? (
-                  providerRepositories.map((r: Doc<"remote_repositories">) => (
-                    <TableRow key={r._id}>
-                      <TableCell className="text-foreground font-medium">{r.fullName}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {r.visibility ?? (r.private ? "private" : "public")}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {r.defaultBranch ?? "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-muted-foreground py-6 text-center">
-                      No repositories found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+      <div className="mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-muted-foreground text-sm font-semibold">Repositories</h4>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={!installationId}
+            onClick={async () => {
+              if (!installationId) return;
+              await fetch("/api/github/refresh", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ installationId }),
+              });
+            }}
+          >
+            Refresh
+          </Button>
         </div>
-      ) : null}
+        <ErrorBoundary fallback={RepoTableError}>
+          <Suspense fallback={<RepoTableSkeleton />}>
+            <RepoTable installation={installation} />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    </>
+  );
+}
+
+function GithubNotConnected() {
+  const installUrl = githubAppSlug
+    ? `https://github.com/apps/${githubAppSlug}/installations/new`
+    : undefined;
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      {installUrl ? (
+        <Button asChild className="text-background">
+          <a href={installUrl}>Connect GitHub App</a>
+        </Button>
+      ) : (
+        <span className="text-sm text-amber-400">Set VITE_GITHUB_APP_SLUG to enable Connect</span>
+      )}
+    </div>
+  );
+}
+
+function RepoTable({ installation }: { installation: GithubInstallation }) {
+  const { data } = useSuspenseQuery(
+    convexQuery(api.git.listReposByInstallation, {
+      installationId: installation.installationId,
+      paginationOpts: { numItems: 50, cursor: null },
+    }),
+  );
+
+  const repositories = data.page ?? [];
+
+  return (
+    <div className="border-border overflow-hidden rounded-lg border">
+      <Table>
+        <TableHeader className="bg-card/50">
+          <TableRow>
+            <TableHead className="px-3">Repository</TableHead>
+            <TableHead className="px-3">Visibility</TableHead>
+            <TableHead className="px-3">Default Branch</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {repositories.length > 0 ? (
+            repositories.map((repo) => (
+              <TableRow key={repo._id}>
+                <TableCell className="text-foreground font-medium">{repo.fullName}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {repo.visibility ?? (repo.private ? "private" : "public")}
+                </TableCell>
+                <TableCell className="text-muted-foreground">{repo.defaultBranch ?? "-"}</TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={3} className="text-muted-foreground py-6 text-center">
+                No repositories found.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function RepoTableSkeleton() {
+  return (
+    <div className="border-border overflow-hidden rounded-lg border p-4">
+      <div className="space-y-3">
+        {[0, 1, 2].map((row) => (
+          <div key={row} className="bg-foreground/10 h-10 w-full animate-pulse rounded" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RepoTableError({ error }: { error: Error }) {
+  return (
+    <div className="border-border bg-card/50 text-failed rounded-lg border p-4 text-sm">
+      {error.message || "Unable to load repositories right now."}
     </div>
   );
 }
@@ -234,52 +240,17 @@ function GitHubCardSkeleton() {
       </div>
       <div className="mt-6 space-y-3">
         <div className="bg-foreground/10 h-4 w-32 rounded" />
-        <div className="border-border bg-foreground/5 h-32 rounded-lg border" />
+        <RepoTableSkeleton />
       </div>
     </div>
   );
 }
 
-function GitHubCardError() {
+function GitHubCardError({ error }: { error: Error }) {
   return (
     <div className="border-border bg-card/50 text-failed rounded-lg border p-5 text-sm">
-      Unable to load GitHub connection details right now. Please refresh to try again.
-    </div>
-  );
-}
-
-export default function ConnectorsPage({ loaderData }: { loaderData: LoaderData }) {
-  const { githubInstallations } = loaderData;
-  const liveConnections = useQuery(api.git.listInstallationsForUser, "skip") as
-    | InstallationConnection[]
-    | undefined;
-  const repositories = useQuery(api.git.listRepositories) as Doc<"remote_repositories">[] | undefined;
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Connectors</h1>
-      <Authenticated>
-        <AuthLoading>
-          <GitHubCardSkeleton />
-        </AuthLoading>
-        <Suspense fallback={<GitHubCardSkeleton />}>
-          <Await resolve={githubInstallations} errorElement={<GitHubCardError />}>
-            {(connections: InstallationConnection[] | null | undefined) => {
-              const effectiveConnections = liveConnections ?? connections ?? [];
-              const githubConnections = effectiveConnections.filter(
-                (connection) => connection.provider === "github",
-              );
-
-              return (
-                <GitHubCard connections={githubConnections} repositories={repositories} />
-              );
-            }}
-          </Await>
-        </Suspense>
-      </Authenticated>
-      <Unauthenticated>
-        <p className="text-slate-400">Sign in to manage connectors.</p>
-      </Unauthenticated>
+      Unable to load GitHub connection details right now.{" "}
+      {error.message || "Please refresh to try again."}
     </div>
   );
 }
