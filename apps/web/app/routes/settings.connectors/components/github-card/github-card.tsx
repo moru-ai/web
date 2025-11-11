@@ -4,16 +4,9 @@ import type { Doc } from "@moru/convex/_generated/dataModel";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "~/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
-import { authMiddleware } from "~/middlewares/auth-middleware";
-import type { Route } from "./+types/settings.connectors";
+import { RepoTable } from "../repo-table/repo-table";
+import { RepoTableSkeleton } from "../repo-table/repo-table-skeleton";
+import { RepoTableError } from "../repo-table/repo-table-error";
 
 type GithubInstallation = Doc<"github_installations">;
 
@@ -21,22 +14,7 @@ const githubAppSlug = import.meta.env.VITE_GITHUB_APP_SLUG as string | undefined
 const githubClientRedirectTo =
   (import.meta.env.VITE_GITHUB_CLIENT_REDIRECT_TO as string) || "/settings";
 
-export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
-
-export default function ConnectorsPage() {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Connectors</h1>
-      <ErrorBoundary fallback={GitHubCardError}>
-        <Suspense fallback={<GitHubCardSkeleton />}>
-          <GitHubCard />
-        </Suspense>
-      </ErrorBoundary>
-    </div>
-  );
-}
-
-function GitHubCard() {
+export function GitHubCard() {
   const { data: installation } = useSuspenseQuery(convexQuery(api.git.getGithubInstallation, {}));
   const connected = Boolean(installation);
 
@@ -157,100 +135,6 @@ function GithubNotConnected() {
       ) : (
         <span className="text-sm text-amber-400">Set VITE_GITHUB_APP_SLUG to enable Connect</span>
       )}
-    </div>
-  );
-}
-
-function RepoTable({ installation }: { installation: GithubInstallation }) {
-  const { data } = useSuspenseQuery(
-    convexQuery(api.git.listReposByInstallation, {
-      installationId: installation.installationId,
-      paginationOpts: { numItems: 50, cursor: null },
-    }),
-  );
-
-  const repositories = data.page ?? [];
-
-  return (
-    <div className="border-border overflow-hidden rounded-lg border">
-      <Table>
-        <TableHeader className="bg-card/50">
-          <TableRow>
-            <TableHead className="px-3">Repository</TableHead>
-            <TableHead className="px-3">Visibility</TableHead>
-            <TableHead className="px-3">Default Branch</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {repositories.length > 0 ? (
-            repositories.map((repo) => (
-              <TableRow key={repo._id}>
-                <TableCell className="text-foreground font-medium">{repo.fullName}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {repo.visibility ?? (repo.private ? "private" : "public")}
-                </TableCell>
-                <TableCell className="text-muted-foreground">{repo.defaultBranch ?? "-"}</TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={3} className="text-muted-foreground py-6 text-center">
-                No repositories found.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-function RepoTableSkeleton() {
-  return (
-    <div className="border-border overflow-hidden rounded-lg border p-4">
-      <div className="space-y-3">
-        {[0, 1, 2].map((row) => (
-          <div key={row} className="bg-foreground/10 h-10 w-full animate-pulse rounded" />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function RepoTableError({ error }: { error: Error }) {
-  return (
-    <div className="border-border bg-card/50 text-failed rounded-lg border p-4 text-sm">
-      {error.message || "Unable to load repositories right now."}
-    </div>
-  );
-}
-
-function GitHubCardSkeleton() {
-  return (
-    <div className="border-border bg-card/50 rounded-lg border p-5">
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <div className="bg-foreground/10 h-5 w-28 rounded" />
-          <div className="bg-foreground/5 h-4 w-64 rounded" />
-        </div>
-        <div className="border-border bg-foreground/5 h-6 w-20 rounded-full border" />
-      </div>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div className="bg-foreground/10 h-9 w-36 rounded" />
-      </div>
-      <div className="mt-6 space-y-3">
-        <div className="bg-foreground/10 h-4 w-32 rounded" />
-        <RepoTableSkeleton />
-      </div>
-    </div>
-  );
-}
-
-function GitHubCardError({ error }: { error: Error }) {
-  return (
-    <div className="border-border bg-card/50 text-failed rounded-lg border p-5 text-sm">
-      Unable to load GitHub connection details right now.{" "}
-      {error.message || "Please refresh to try again."}
     </div>
   );
 }
