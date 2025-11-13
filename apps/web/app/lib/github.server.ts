@@ -9,8 +9,14 @@
  */
 
 import { App } from "octokit";
-import type { ConvexClient } from "convex/browser";
+import type { ConvexHttpClient } from "convex/browser";
 import { api } from "@moru/convex/_generated/api";
+
+/**
+ * A Convex client that supports querying.
+ * Used for server-side operations that only need read access.
+ */
+type ConvexQueryableClient = Pick<ConvexHttpClient, "query">;
 
 /**
  * Get required environment variable or throw error
@@ -43,7 +49,7 @@ export interface GitHubBranch {
  */
 export interface FetchBranchesOptions {
   /** Convex client instance for querying installation data */
-  convexClient: ConvexClient;
+  convexClient: ConvexQueryableClient;
   /** Repository full name in "owner/repo" format */
   repoFullName: string;
   /** Number of branches per page (default: 100) */
