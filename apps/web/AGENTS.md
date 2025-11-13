@@ -102,3 +102,114 @@ export function JobsList() {
 ## Settings Connectors
 
 - Settings → Connectors renders one card per provider and now sources repository lists from the aggregated `api.git.listRepositories` query, so backend changes to that query require regenerating Convex types before touching the UI.
+
+## Pagination and Data Fetching
+
+### Why We Don't Use TanStack Query for Pagination
+
+For components that require pagination (repository lists, etc.), we use **Convex native hooks** (`usePaginatedQuery`) instead of TanStack Query. This decision was made for several reasons:
+
+1. **Tight Integration**: Convex's `usePaginatedQuery` is specifically designed to work with Convex's cursor-based pagination system, providing seamless integration with backend queries.
+
+2. **Simpler State Management**: Convex hooks handle loading, error, and pagination states internally, reducing the need for external state management libraries.
+
+3. **Real-time Updates**: Convex hooks automatically subscribe to database changes, keeping paginated data fresh without manual cache invalidation.
+
+4. **Consistency**: Using Convex's native patterns throughout the app creates a more consistent codebase and reduces dependency complexity.
+
+### Pattern: Component-Level Loading and Error Handling
+
+Instead of using external Suspense/ErrorBoundary components, paginated components handle their own loading and error states:
+
+```tsx
+import { usePaginatedQuery } from "convex/react";
+import { api } from "@moru/convex/_generated/api";
+
+export function MyPaginatedComponent() {
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.myQuery.paginated,
+    { /* args */ },
+    { initialNumItems: 20 }
+  );
+
+  // Handle loading state
+  if (status === "LoadingFirstPage") {
+    return <Spinner />;
+  }
+
+  // Handle error state (if needed)
+  // Note: Convex queries will throw errors that can be caught
+
+  // Render data
+  return (
+    <div>
+      {results.map(item => <div key={item._id}>{item.name}</div>)}
+      {status === "CanLoadMore" && (
+        <button onClick={() => loadMore(10)}>Load More</button>
+      )}
+    </div>
+  );
+}
+```
+
+### Components Using This Pattern
+
+- **[repo-select.tsx](app/components/repo-select/repo-select.tsx)**: Repository dropdown with infinite scroll
+- **[repo-table.tsx](app/routes/settings.connectors/components/repo-table/repo-table.tsx)**: Settings page repository table with "Load More" button
+
+### Pattern: TanStack Query with API Routes for External Data
+
+For components that fetch external data (e.g., GitHub API) through our API routes, we use **TanStack Query** (`useSuspenseInfiniteQuery`):
+
+```tsx
+import { Suspense } from "react";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+
+function MyDataList({ externalId }: { externalId: string }) {
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery({
+    queryKey: ["myData", externalId],
+    queryFn: async () => {
+      const response = await fetch(`/api/my-endpoint?id=${encodeURIComponent(externalId)}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch data");
+      }
+      return await response.json();
+    },
+    getNextPageParam: () => undefined, // Adjust based on your pagination needs
+    initialPageParam: 1,
+  });
+
+  // Get data from pages
+  const items = data.pages[0]?.items || [];
+
+  return (
+    <div>
+      {items.map(item => <div key={item.id}>{item.name}</div>)}
+      {isFetchingNextPage && <Spinner />}
+    </div>
+  );
+}
+
+export function MyComponent({ externalId }: { externalId: string }) {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <MyDataList externalId={externalId} />
+    </Suspense>
+  );
+}
+```
+
+**Why use TanStack Query for API route calls:**
+- **Better Caching**: TanStack Query provides sophisticated caching strategies for API data
+- **Automatic Retries**: Built-in retry logic for failed requests
+- **Request Deduplication**: Multiple components requesting the same data only trigger one network request
+- **Declarative Loading States**: Suspense boundaries handle loading UI cleanly
+- **Server-Side Authentication**: API routes handle authentication and external API calls securely
+
+**When to use:**
+- Fetching data from external APIs (GitHub, etc.) through our API routes
+- Data that changes frequently and benefits from caching strategies
+- Components that need to fetch data that requires server-side authentication
+
+**Components using this pattern:**
+- **[branch-select.tsx](app/components/branch-select/branch-select.tsx)**: Branch dropdown (fetches from GitHub API via `/api/github/branches` route)
