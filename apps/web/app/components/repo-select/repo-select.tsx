@@ -1,6 +1,17 @@
-import { Suspense, useState, useRef } from "react";
+/**
+ * Repository Selection Dropdown Component
+ *
+ * Design Decision: Uses Convex native hooks instead of TanStack Query
+ * - We use `usePaginatedQuery` from Convex for seamless integration with cursor-based pagination
+ * - Loading and error states are handled internally within the component
+ * - This approach provides better real-time updates and reduces external dependencies
+ * - See AGENTS.md "Pagination and Data Fetching" section for more details
+ */
+
+import { useState, useRef } from "react";
 
 import { Check, ChevronDown } from "lucide-react";
+import { usePaginatedQuery } from "convex/react";
 
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
@@ -16,7 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover
 import { Spinner } from "~/components/ui/spinner";
 import { ErrorBoundary } from "~/components/ui/error-boundary";
 import type { Doc, Id } from "@moru/convex/_generated/dataModel";
-import { useInfiniteRepositories } from "~/hooks/use-infinite-repositories";
+import { api } from "@moru/convex/_generated/api";
 import { useInfiniteScroll } from "~/hooks/use-infinite-scroll";
 
 interface RepoSelectProps {
@@ -37,15 +48,37 @@ function RepoListContent({
   listRef: React.RefObject<HTMLDivElement | null>;
   searchQuery: string;
 }) {
-  const { repositories, isLoadingMore, handleLoadMore, isDone } = useInfiniteRepositories(20, 10);
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.git.listRepositoriesPaginated,
+    {},
+    { initialNumItems: 20 },
+  );
+
+  const handleLoadMore = () => {
+    if (status === "CanLoadMore") {
+      loadMore(10);
+    }
+  };
+
+  const isLoadingMore = status === "LoadingMore";
+  const isDone = status !== "CanLoadMore" && status !== "LoadingMore";
 
   useInfiniteScroll(listRef, handleLoadMore, isDone, isLoadingMore, searchQuery.trim().length > 0);
+
+  // Show loading spinner for initial load
+  if (status === "LoadingFirstPage") {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <>
       <CommandEmpty>No repository found.</CommandEmpty>
       <CommandGroup>
-        {repositories.map((repository) => (
+        {results.map((repository) => (
           <CommandItem
             key={repository._id}
             value={repository._id}
@@ -67,14 +100,6 @@ function RepoListContent({
         </div>
       )}
     </>
-  );
-}
-
-function RepoListError({ error }: { error: Error }) {
-  return (
-    <div className="text-destructive p-4 text-sm">
-      {error.message || "Failed to load repositories"}
-    </div>
   );
 }
 
@@ -121,21 +146,13 @@ export function RepoSelect({ onSelect }: RepoSelectProps) {
           />
           <CommandList ref={listRef}>
             {open && (
-              <ErrorBoundary fallback={(error) => <RepoListError error={error} />}>
-                <Suspense
-                  fallback={
-                    <div className="flex items-center justify-center p-4">
-                      <Spinner />
-                    </div>
-                  }
-                >
-                  <RepoListContent
-                    value={selectedRepo?._id ?? null}
-                    onSelect={handleSelect}
-                    listRef={listRef}
-                    searchQuery={searchQuery}
-                  />
-                </Suspense>
+              <ErrorBoundary>
+                <RepoListContent
+                  value={selectedRepo?._id ?? null}
+                  onSelect={handleSelect}
+                  listRef={listRef}
+                  searchQuery={searchQuery}
+                />
               </ErrorBoundary>
             )}
           </CommandList>
