@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon",
-    "start": "NODE_ENV=production node dist/index.js",
+    "start": "NODE_ENV=production node --loader=extensionless dist/server.js",
     "build": "node ./esbuild.config.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\""
   },
@@ -16,16 +16,22 @@
       "node_modules/**"
     ],
     "ext": "ts",
-    "exec": "rm -rf dist && node ./esbuild.config.js && node ./dist/index.js | pino-pretty --singleLine"
+    "exec": "rm -rf dist && node ./esbuild.config.js && node --loader=extensionless ./dist/server.js | pino-pretty --singleLine"
   },
   "dependencies": {
+    "@fastify/autoload": "^6.1.0",
     "@fastify/awilix": "^8.0.0",
+    "@fastify/env": "^5.0.2",
+    "@sinclair/typebox": "^0.34.16",
     "awilix": "^12.0.5",
     "bullmq": "^5.61.0",
     "convex": "^1.28.0",
     "dockerode": "^4.0.2",
-    "dotenv": "^16.4.7",
+    "dotenv-safe": "^9.1.0",
+    "extensionless": "^2.0.2",
     "fastify": "^5.6.1",
+    "fastify-graceful-shutdown": "^4.0.1",
+    "fastify-plugin": "^5.0.1",
     "ioredis": "^5.6.0"
   },
   "devDependencies": {
