@@ -1,3 +1,13 @@
+/**
+ * Branch Selection Dropdown Component
+ *
+ * Design Decision: Uses TanStack Query for external API calls
+ * - We use `useSuspenseInfiniteQuery` from TanStack Query to fetch from our API route
+ * - TanStack Query provides better caching, retry logic, and state management for API calls
+ * - Suspense boundaries handle loading states declaratively
+ * - See AGENTS.md "Pagination and Data Fetching" section for more details
+ */
+
 import { useState, useEffect } from "react";
 
 import { Check, ChevronDown } from "lucide-react";
@@ -16,15 +26,11 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { Spinner } from "~/components/ui/spinner";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { fetchBranches, type Branch } from "~/lib/api/github";
 
 interface BranchSelectProps {
   repoFullName: string | null;
   onSelect?: (branchName: string | null) => void;
-}
-
-interface Branch {
-  name: string;
-  protected?: boolean;
 }
 
 function BranchListContent({
@@ -38,20 +44,7 @@ function BranchListContent({
 }) {
   const { data } = useSuspenseQuery({
     queryKey: ["branches", repoFullName],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/github/branches?repo_full_name=${encodeURIComponent(repoFullName)}`,
-      );
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: "Failed to fetch branches" }));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      return response.json();
-    },
+    queryFn: () => fetchBranches(repoFullName),
   });
 
   const branches: Branch[] = data.branches || [];
@@ -90,6 +83,7 @@ function BranchListError({ error }: { error: Error }) {
 export function BranchSelect({ repoFullName, onSelect }: BranchSelectProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Reset branch selection when repository changes
   useEffect(() => {
@@ -123,7 +117,12 @@ export function BranchSelect({ repoFullName, onSelect }: BranchSelectProps) {
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
         <Command>
-          <CommandInput placeholder="Search branch..." className="h-9" />
+          <CommandInput
+            placeholder="Search branch..."
+            className="h-9"
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
           <CommandList>
             {open && (
               <ErrorBoundary fallback={BranchListError}>
