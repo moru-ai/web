@@ -1,7 +1,17 @@
-import { useState, useEffect } from "react";
+/**
+ * Branch Selection Dropdown Component
+ *
+ * Design Decision: Uses TanStack Query for external API calls
+ * - We use `useSuspenseInfiniteQuery` from TanStack Query to fetch from our API route
+ * - TanStack Query provides better caching, retry logic, and state management for API calls
+ * - Suspense boundaries handle loading states declaratively
+ * - See AGENTS.md "Pagination and Data Fetching" section for more details
+ */
+
+import { Suspense, useState, useEffect } from "react";
 
 import { Check, ChevronDown } from "lucide-react";
-import { ErrorBoundary, Suspense } from "@suspensive/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
@@ -15,43 +25,24 @@ import {
 } from "~/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { Spinner } from "~/components/ui/spinner";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { ErrorBoundary } from "~/components/ui/error-boundary";
+import { fetchBranches, type Branch } from "~/lib/api/github";
 
 interface BranchSelectProps {
   repoFullName: string | null;
   onSelect?: (branchName: string | null) => void;
 }
 
-interface Branch {
-  name: string;
-  protected?: boolean;
-}
-
-function BranchListContent({
-  repoFullName,
-  value,
-  onSelect,
-}: {
+interface BranchListContentProps {
   repoFullName: string;
   value: string;
   onSelect: (branchName: string | null) => void;
-}) {
+}
+
+function BranchListContent({ repoFullName, value, onSelect }: BranchListContentProps) {
   const { data } = useSuspenseQuery({
     queryKey: ["branches", repoFullName],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/github/branches?repo_full_name=${encodeURIComponent(repoFullName)}`,
-      );
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: "Failed to fetch branches" }));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      return response.json();
-    },
+    queryFn: () => fetchBranches(repoFullName),
   });
 
   const branches: Branch[] = data.branches || [];
@@ -81,15 +72,10 @@ function BranchListContent({
   );
 }
 
-function BranchListError({ error }: { error: Error }) {
-  return (
-    <div className="text-destructive p-4 text-sm">{error.message || "Failed to load branches"}</div>
-  );
-}
-
 export function BranchSelect({ repoFullName, onSelect }: BranchSelectProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Reset branch selection when repository changes
   useEffect(() => {
@@ -123,10 +109,15 @@ export function BranchSelect({ repoFullName, onSelect }: BranchSelectProps) {
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
         <Command>
-          <CommandInput placeholder="Search branch..." className="h-9" />
+          <CommandInput
+            placeholder="Search branch..."
+            className="h-9"
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
           <CommandList>
             {open && (
-              <ErrorBoundary fallback={BranchListError}>
+              <ErrorBoundary>
                 <Suspense
                   fallback={
                     <div className="flex items-center justify-center p-4">
@@ -134,11 +125,7 @@ export function BranchSelect({ repoFullName, onSelect }: BranchSelectProps) {
                     </div>
                   }
                 >
-                  <BranchListContent
-                    repoFullName={repoFullName}
-                    value={value}
-                    onSelect={handleSelect}
-                  />
+                  <BranchListContent repoFullName={repoFullName} value={value} onSelect={handleSelect} />
                 </Suspense>
               </ErrorBoundary>
             )}

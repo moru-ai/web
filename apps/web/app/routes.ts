@@ -4,7 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("sign-in", "routes/sign-in.tsx"),
   route("settings", "routes/settings.tsx", [
-    index("routes/settings.connectors.tsx"),
+    index("routes/settings.connectors/settings.connectors.tsx"),
     route("github", "routes/settings.github.tsx"),
   ]),
   route("tasks/:id", "routes/tasks.tsx"),
