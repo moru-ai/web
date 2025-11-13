@@ -1,7 +1,6 @@
-import { useState, useRef } from "react";
+import { Suspense, useState, useRef } from "react";
 
 import { Check, ChevronDown } from "lucide-react";
-import { ErrorBoundary, Suspense } from "@suspensive/react";
 
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
@@ -15,6 +14,7 @@ import {
 } from "~/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { Spinner } from "~/components/ui/spinner";
+import { ErrorBoundary } from "~/components/ui/error-boundary";
 import type { Doc, Id } from "@moru/convex/_generated/dataModel";
 import { useInfiniteRepositories } from "~/hooks/use-infinite-repositories";
 import { useInfiniteScroll } from "~/hooks/use-infinite-scroll";
@@ -121,7 +121,7 @@ export function RepoSelect({ onSelect }: RepoSelectProps) {
           />
           <CommandList ref={listRef}>
             {open && (
-              <ErrorBoundary fallback={RepoListError}>
+              <ErrorBoundary fallback={(error) => <RepoListError error={error} />}>
                 <Suspense
                   fallback={
                     <div className="flex items-center justify-center p-4">

@@ -13,6 +13,7 @@ import {
 } from "~/components/ui/table";
 import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
+import { ErrorBoundary } from "~/components/ui/error-boundary";
 
 type GithubInstallation = Doc<"github_installations">;
 
@@ -60,58 +61,60 @@ export function RepoTable({ installation }: { installation: GithubInstallation }
   };
 
   return (
-    <div className="border-border overflow-hidden rounded-lg border">
-      <div className="max-h-[600px] overflow-y-auto">
-        <Table>
-          <TableHeader className="bg-card/50">
-            <TableRow>
-              <TableHead className="px-3">Repository</TableHead>
-              <TableHead className="px-3">Visibility</TableHead>
-              <TableHead className="px-3">Default Branch</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {repositories.length > 0 ? (
-              repositories.map((repo) => (
-                <TableRow key={repo._id}>
-                  <TableCell className="text-foreground font-medium">{repo.fullName}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {repo.visibility ?? (repo.private ? "private" : "public")}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {repo.defaultBranch ?? "-"}
+    <ErrorBoundary>
+      <div className="border-border overflow-hidden rounded-lg border">
+        <div className="max-h-[600px] overflow-y-auto">
+          <Table>
+            <TableHeader className="bg-card/50">
+              <TableRow>
+                <TableHead className="px-3">Repository</TableHead>
+                <TableHead className="px-3">Visibility</TableHead>
+                <TableHead className="px-3">Default Branch</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {repositories.length > 0 ? (
+                repositories.map((repo) => (
+                  <TableRow key={repo._id}>
+                    <TableCell className="text-foreground font-medium">{repo.fullName}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {repo.visibility ?? (repo.private ? "private" : "public")}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {repo.defaultBranch ?? "-"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-muted-foreground py-6 text-center">
+                    No repositories found.
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={3} className="text-muted-foreground py-6 text-center">
-                  No repositories found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {!isDone && (
-        <div className="border-t-border flex justify-center border-t p-4">
-          <Button
-            variant="outline"
-            onClick={handleLoadMore}
-            disabled={isLoadingMore}
-            className="w-full"
-          >
-            {isLoadingMore ? (
-              <>
-                <Spinner className="mr-2" />
-                Loading...
-              </>
-            ) : (
-              "Load More"
-            )}
-          </Button>
+              )}
+            </TableBody>
+          </Table>
         </div>
-      )}
-    </div>
+        {!isDone && (
+          <div className="border-t-border flex justify-center border-t p-4">
+            <Button
+              variant="outline"
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              className="w-full"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Spinner className="mr-2" />
+                  Loading...
+                </>
+              ) : (
+                "Load More"
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
