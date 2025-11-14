@@ -10,7 +10,10 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\""
   },
   "nodemonConfig": {
-    "watch": "src",
+    "watch": [
+      "src",
+      ".env"
+    ],
     "ignore": [
       "dist/**",
       "node_modules/**"
