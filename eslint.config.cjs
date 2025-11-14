@@ -67,6 +67,7 @@ module.exports = [
       "simple-import-sort/imports": "off",
       "unused-imports/no-unused-imports": "error",
       "@typescript-eslint/consistent-type-imports": "off",
+      "import/default": "off",
     },
   },
   {
