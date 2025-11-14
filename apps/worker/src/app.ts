@@ -1,5 +1,5 @@
 import path from "node:path";
-import { fastifyAutoload } from "@fastify/autoload";
+import fastifyAutoload from "@fastify/autoload";
 import { FastifyInstance, FastifyPluginOptions } from "fastify";
 
 export const options = {
