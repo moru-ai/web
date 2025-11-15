@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon",
+    "typecheck": "tsc",
     "start": "NODE_ENV=production node --loader=extensionless dist/server.js",
-    "build": "node ./esbuild.config.js",
+    "build": "pnpm typecheck && node ./esbuild.config.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\""
   },
   "nodemonConfig": {
