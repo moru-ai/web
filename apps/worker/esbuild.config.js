@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { glob } from "glob";
 
-const entryPoints = await glob([path.resolve("./src/*.ts")]);
+const entryPoints = await glob([path.resolve("./src/**/*.ts")]);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
 const convexGeneratedDir = path.join(repoRoot, "apps/backend/convex/_generated");

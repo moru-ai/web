@@ -1,12 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "noEmit": false,
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@moru/convex/_generated/api": ["../backend/convex/_generated/api"],
-      "@moru/convex/_generated/dataModel": ["../backend/convex/_generated/dataModel"]
+      "@moru/convex/_generated/api": ["../backend/convex/_generated/api.d.ts"],
+      "@moru/convex/_generated/dataModel": ["../backend/convex/_generated/dataModel.d.ts"]
     }
   },
   "include": ["src"]

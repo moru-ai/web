@@ -1,4 +1,4 @@
-import { UnauthenticatedError } from "errors/unauthenticated";
+import { UnauthenticatedError } from "../errors/unauthenticated";
 import { GenericCtx } from "./_generated/server";
 
 export const getUserIdentityOrThrow = async (ctx: GenericCtx) => {
