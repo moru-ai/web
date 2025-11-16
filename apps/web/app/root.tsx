@@ -55,7 +55,6 @@ export async function loader(args: Route.LoaderArgs) {
   return await rootAuthLoader(args, async ({ request }) => {
     const { getToken } = request.auth;
     const token = await getToken({ template: "convex" });
-    console.log("convexQueryClient", convexQueryClient);
 
     convexQueryClient.serverHttpClient?.setAuth(token ?? "");
     return {
