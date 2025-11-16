@@ -14,8 +14,6 @@ export function createTasksWorker(app: FastifyInstance) {
     TASKS_QUEUE_NAME,
     async (job) => {
       job.log("job start");
-      console.log("hello world");
-      console.log(app.env.CONVEX_URL);
       job.log("job end");
     },
     options,

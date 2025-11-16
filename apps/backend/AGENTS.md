@@ -36,6 +36,13 @@ When editing `apps/backend/convex/schema.ts`:
 
 - CI deploys on changes to backend/shared (see root AGENTS.md Deployment). Local deploys should use `pnpm deploy` only when instructed.
 
+## Worker Enqueue
+
+- `convex/worker.ts` defines `insertTaskJob`, an internal action that POSTs to the worker's `/api/tasks` endpoint and includes the task payload.
+- Configure both `WORKER_URL` and `WORKER_API_KEY` via `apps/backend/.env.local` (for local dev) and `npx convex env set` (for deployed envs). The worker rejects requests without the shared bearer key.
+- Web/worker flows that enqueue tasks should call this action to avoid duplicating HTTP glue code.
+- On enqueue failure the caller should decide whether to roll back previously created records; keep Convex logs open when debugging worker outages or auth issues.
+
 ## Authentication (Clerk JWT)
 
 - Auth is configured via `convex/auth.config.ts` using Clerk-issued JWTs.

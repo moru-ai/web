@@ -44,6 +44,7 @@ async function init() {
 
   try {
     app.listen({ port: Number(process.env.PORT ?? 4000) });
+    app.log.info(`Server is listening`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

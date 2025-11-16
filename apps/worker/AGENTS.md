@@ -2,10 +2,12 @@
 
 - After changing worker code, review and update this AGENTS.md if anything needs to be refreshed.
 - Run BullMQ worker processes that spawn Codex executors in container sandboxes.
-- Provide `/api/tasks` HTTP route (see `src/routes/tasks/enqueue.ts`) that enqueues BullMQ jobs into the `tasks` queue implemented under `src/workers/tasks`.
+- Provide `/api/tasks` HTTP route (see `src/routes/api/tasks`) that enqueues BullMQ jobs into the `tasks` queue implemented under `src/workers/tasks`.
 - Use Convex mutations for status updates and completion reporting.
 - Ensure Redis connection resiliency and idempotent job handling.
 - `plugins/external/redis.ts` exposes `fastify.redis.connection` plus a shared `fastify.redis.client` (ioredis) and cleans it up on shutdown; reuse these instead of parsing Redis URLs in multiple places.
+- `plugins/external/auth.ts` verifies the `Authorization: Bearer <WORKER_API_KEY>` header and decorates `fastify.authenticate` so internal routes can enforce shared-secret auth.
+- Keep the `WORKER_API_KEY` value in `apps/worker/.env` (loaded via `dotenv-safe`) and share the same secret with Convex so enqueue calls succeed.
 - `plugins/app/app.queues.ts` exposes `fastify.queues.tasks` so routes can enqueue jobs without recreating BullMQ clients; the plugin closes queues during shutdown.
 - Exposes `/health` endpoint for readiness probes.
 - `src/app.ts` autoloads `plugins/app` before `plugins/external` so foundational plugins like `app.env` register before any dependencies (for example `app.redis`).

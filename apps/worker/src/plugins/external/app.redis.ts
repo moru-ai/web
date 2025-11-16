@@ -11,7 +11,9 @@ declare module "fastify" {
 
 export default fp(
   async (app) => {
-    const connection = new Redis(app.env.REDIS_URL);
+    const connection = new Redis(app.env.REDIS_URL, {
+      maxRetriesPerRequest: null,
+    });
 
     app.decorate("redis", { connection });
 

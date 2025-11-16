@@ -1,7 +1,7 @@
 import { FastifyPluginAsyncTypebox, Type } from "@fastify/type-provider-typebox";
 
-const healthRoute: FastifyPluginAsyncTypebox = async (fastify) => {
-  fastify.get(
+const healthRoute: FastifyPluginAsyncTypebox = async (app) => {
+  app.get(
     "/health",
     {
       schema: {

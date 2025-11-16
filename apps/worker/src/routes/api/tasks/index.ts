@@ -8,6 +8,7 @@ const plugin: FastifyPluginAsyncTypebox = async (app) => {
   app.post(
     "/",
     {
+      preHandler: app.authenticate,
       schema: {
         body: CreateTaskSchema,
         response: {
@@ -23,6 +24,8 @@ const plugin: FastifyPluginAsyncTypebox = async (app) => {
       const job = await app.queues.tasks.add(taskId, {
         taskId,
       });
+
+      console.log("job", job);
 
       return { jobId: job.id };
     },
