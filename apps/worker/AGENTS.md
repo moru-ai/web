@@ -5,7 +5,10 @@
 - Provide `/api/tasks` HTTP route (see `src/routes/tasks/enqueue.ts`) that enqueues BullMQ jobs into the `tasks` queue implemented under `src/workers/tasks`.
 - Use Convex mutations for status updates and completion reporting.
 - Ensure Redis connection resiliency and idempotent job handling.
+- `plugins/external/redis.ts` exposes `fastify.redis.connection` plus a shared `fastify.redis.client` (ioredis) and cleans it up on shutdown; reuse these instead of parsing Redis URLs in multiple places.
+- `plugins/app/app.queues.ts` exposes `fastify.queues.tasks` so routes can enqueue jobs without recreating BullMQ clients; the plugin closes queues during shutdown.
 - Exposes `/health` endpoint for readiness probes.
+- `src/app.ts` autoloads `plugins/app` before `plugins/external` so foundational plugins like `app.env` register before any dependencies (for example `app.redis`).
 - Fastify autoload loads HTTP routes from `src/routes`; add new handlers there (e.g., `health`).
 
 ## Commands
