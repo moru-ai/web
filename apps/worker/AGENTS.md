@@ -2,10 +2,11 @@
 
 - After changing worker code, review and update this AGENTS.md if anything needs to be refreshed.
 - Run BullMQ worker processes that spawn Codex executors in container sandboxes.
-- Provide `/internal/enqueue` HTTP route for job submission from web/Convex.
+- Provide `/api/tasks` HTTP route (see `src/routes/tasks/enqueue.ts`) that enqueues BullMQ jobs into the `tasks` queue implemented under `src/workers/tasks`.
 - Use Convex mutations for status updates and completion reporting.
 - Ensure Redis connection resiliency and idempotent job handling.
 - Exposes `/health` endpoint for readiness probes.
+- Fastify autoload loads HTTP routes from `src/routes`; add new handlers there (e.g., `health`).
 
 ## Commands
 

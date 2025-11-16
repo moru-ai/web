@@ -10,7 +10,8 @@
     "build": "convex codegen",
     "lint": "eslint convex",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "convex": "^1.28.0"
