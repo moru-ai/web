@@ -20,7 +20,11 @@ export default async function serviceApp(fastify: FastifyInstance, opts: Fastify
     options: { ...opts },
   });
 
-  fastify.get("/health", () => {
-    return { ok: true };
+  fastify.register(fastifyAutoload, {
+    dir: path.join(import.meta.dirname, "routes"),
+    autoHooks: true,
+    cascadeHooks: true,
+    forceESM: true,
+    options: { ...opts },
   });
 }
