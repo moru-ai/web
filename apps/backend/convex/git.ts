@@ -1,8 +1,8 @@
-import { v } from 'convex/values';
-import { paginationOptsValidator } from 'convex/server';
-import type { Doc, Id } from './_generated/dataModel';
-import { mutation, query } from './_generated/server';
-import { getUserIdentityOrThrow } from './auth.helper';
+import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { getUserIdentityOrThrow } from "./auth.helper";
 
 export const listInstallationsForUser = query({
   handler: async (ctx) => {
@@ -11,17 +11,18 @@ export const listInstallationsForUser = query({
 
     // With merged schema, use github_installations filtered by userId
     const installs = await ctx.db
-      .query('github_installations')
-      .filter((f) => f.eq(f.field('userId'), userId))
+      .query("github_installations")
+      .filter((f) => f.eq(f.field("userId"), userId))
       .collect();
 
     const results = [] as Array<{
+      provider: "github";
       connectionId: string;
-      status: 'connected' | 'disconnected';
+      status: "connected" | "disconnected";
       selectedRepoFullName: string | null | undefined;
       installation:
-        | (Omit<Doc<'github_installations'>, '_id' | '_creationTime'> & {
-            _id: Id<'github_installations'>;
+        | (Omit<Doc<"github_installations">, "_id" | "_creationTime"> & {
+            _id: Id<"github_installations">;
             _creationTime: number;
           })
         | null;
@@ -29,8 +30,9 @@ export const listInstallationsForUser = query({
 
     for (const inst of installs) {
       results.push({
+        provider: "github",
         connectionId: inst._id as unknown as string,
-        status: inst.connected ? 'connected' : 'disconnected',
+        status: inst.connected ? "connected" : "disconnected",
         selectedRepoFullName: null,
         installation: inst,
       });
@@ -39,13 +41,28 @@ export const listInstallationsForUser = query({
   },
 });
 
+export const getGithubInstallation = query({
+  handler: async (ctx) => {
+    const identity = await getUserIdentityOrThrow(ctx);
+    const userId = identity.id as string;
+
+    const installation = await ctx.db
+      .query("github_installations")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .filter((f) => f.eq(f.field("connected"), true))
+      .first();
+
+    return installation ?? null;
+  },
+});
+
 export const getInstallationByUserId = query({
   handler: async (ctx) => {
     const identity = await getUserIdentityOrThrow(ctx);
     const userId = identity.id as string;
     const installation = await ctx.db
-      .query('github_installations')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .query("github_installations")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
     return installation;
   },
@@ -61,9 +78,9 @@ export const getInstallationByRepoFullName = query({
 
     // Find repository by fullName and userId
     const repository = await ctx.db
-      .query('remote_repositories')
-      .withIndex('by_fullName', (q) => q.eq('fullName', args.repoFullName))
-      .filter((f) => f.eq(f.field('userId'), userId))
+      .query("remote_repositories")
+      .withIndex("by_fullName", (q) => q.eq("fullName", args.repoFullName))
+      .filter((f) => f.eq(f.field("userId"), userId))
       .first();
 
     if (!repository) {
@@ -72,8 +89,8 @@ export const getInstallationByRepoFullName = query({
 
     // Get installation by installationId
     const installation = await ctx.db
-      .query('github_installations')
-      .withIndex('by_installationId', (q) => q.eq('installationId', repository.installationId))
+      .query("github_installations")
+      .withIndex("by_installationId", (q) => q.eq("installationId", repository.installationId))
       .unique();
 
     return installation;
@@ -90,17 +107,17 @@ export const listReposByInstallation = query({
     await getUserIdentityOrThrow(ctx);
 
     let q = ctx.db
-      .query('remote_repositories')
-      .withIndex('by_installationId', (q) => q.eq('installationId', args.installationId))
-      .filter((f) => f.eq(f.field('provider'), 'github'));
+      .query("remote_repositories")
+      .withIndex("by_installationId", (q) => q.eq("installationId", args.installationId))
+      .filter((f) => f.eq(f.field("provider"), "github"));
 
     // Basic exact-match filtering for MVP; avoid full scans.
     if (args.search) {
       const term = args.search;
-      q = q.filter((f) => f.or(f.eq(f.field('fullName'), term), f.eq(f.field('name'), term)));
+      q = q.filter((f) => f.or(f.eq(f.field("fullName"), term), f.eq(f.field("name"), term)));
     }
 
-    return await q.order('desc').paginate(args.paginationOpts);
+    return await q.order("desc").paginate(args.paginationOpts);
   },
 });
 
@@ -110,11 +127,29 @@ export const listRepositories = query({
     const userId = identity.id as string;
 
     const repositories = await ctx.db
-      .query('remote_repositories')
-      .filter((f) => f.eq(f.field('userId'), userId))
+      .query("remote_repositories")
+      .filter((f) => f.eq(f.field("userId"), userId))
       .collect();
 
     return repositories;
+  },
+});
+
+export const listRepositoriesPaginated = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const identity = await getUserIdentityOrThrow(ctx);
+    const userId = identity.id as string;
+
+    const result = await ctx.db
+      .query("remote_repositories")
+      .filter((f) => f.eq(f.field("userId"), userId))
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    return result;
   },
 });
 
@@ -130,8 +165,8 @@ export const upsertInstallation = mutation({
     const userId = identity.id as string;
     const now = Date.now();
     const existing = await ctx.db
-      .query('github_installations')
-      .withIndex('by_installationId', (q) => q.eq('installationId', args.installationId))
+      .query("github_installations")
+      .withIndex("by_installationId", (q) => q.eq("installationId", args.installationId))
       .unique();
 
     if (existing) {
@@ -144,7 +179,7 @@ export const upsertInstallation = mutation({
       return existing._id;
     }
 
-    const id = await ctx.db.insert('github_installations', {
+    const id = await ctx.db.insert("github_installations", {
       installationId: args.installationId,
       accountLogin: args.accountLogin,
       appSlug: args.appSlug,
@@ -181,8 +216,8 @@ export const upsertRepositories = mutation({
     const now = Date.now();
     for (const r of args.repos) {
       const existing = await ctx.db
-        .query('remote_repositories')
-        .withIndex('by_repoId', (q) => q.eq('repoId', r.repoId))
+        .query("remote_repositories")
+        .withIndex("by_repoId", (q) => q.eq("repoId", r.repoId))
         .unique();
       if (existing) {
         await ctx.db.patch(existing._id, {
@@ -192,12 +227,12 @@ export const upsertRepositories = mutation({
           private: r.private,
           defaultBranch: r.defaultBranch ?? null,
           visibility: r.visibility,
-          provider: 'github',
+          provider: "github",
           installationId: args.installationId,
           updatedAt: now,
         });
       } else {
-        await ctx.db.insert('remote_repositories', {
+        await ctx.db.insert("remote_repositories", {
           repoId: r.repoId,
           fullName: r.fullName,
           name: r.name,
@@ -205,7 +240,7 @@ export const upsertRepositories = mutation({
           private: r.private,
           defaultBranch: r.defaultBranch ?? null,
           visibility: r.visibility,
-          provider: 'github',
+          provider: "github",
           installationId: args.installationId,
           createdAt: now,
           updatedAt: now,
@@ -228,8 +263,8 @@ export const disconnectInstallationForUser = mutation({
     const userId = identity.id as string;
 
     const inst = await ctx.db
-      .query('github_installations')
-      .withIndex('by_installationId', (q) => q.eq('installationId', installationId))
+      .query("github_installations")
+      .withIndex("by_installationId", (q) => q.eq("installationId", installationId))
       .unique();
 
     if (!inst || (inst.userId && inst.userId !== userId)) {
@@ -241,8 +276,8 @@ export const disconnectInstallationForUser = mutation({
     if (removeRepos) {
       // Best-effort cleanup of repos for the installation
       const toDelete = await ctx.db
-        .query('remote_repositories')
-        .withIndex('by_installationId', (q) => q.eq('installationId', installationId))
+        .query("remote_repositories")
+        .withIndex("by_installationId", (q) => q.eq("installationId", installationId))
         .collect();
       for (const r of toDelete) {
         await ctx.db.delete(r._id);
@@ -262,8 +297,8 @@ export const disconnectInstallation = mutation({
     const { installationId, removeRepos } = args;
 
     const inst = await ctx.db
-      .query('github_installations')
-      .withIndex('by_installationId', (q) => q.eq('installationId', installationId))
+      .query("github_installations")
+      .withIndex("by_installationId", (q) => q.eq("installationId", installationId))
       .unique();
     if (inst) {
       await ctx.db.patch(inst._id, { connected: false, updatedAt: Date.now() });
@@ -271,8 +306,8 @@ export const disconnectInstallation = mutation({
 
     if (removeRepos) {
       const repos = await ctx.db
-        .query('remote_repositories')
-        .withIndex('by_installationId', (q) => q.eq('installationId', installationId))
+        .query("remote_repositories")
+        .withIndex("by_installationId", (q) => q.eq("installationId", installationId))
         .collect();
       for (const r of repos) {
         await ctx.db.delete(r._id);
@@ -294,8 +329,8 @@ export const removeRepositoriesByRepoId = mutation({
     let removed = 0;
     for (const repoId of repoIds) {
       const existing = await ctx.db
-        .query('remote_repositories')
-        .withIndex('by_repoId', (q) => q.eq('repoId', repoId))
+        .query("remote_repositories")
+        .withIndex("by_repoId", (q) => q.eq("repoId", repoId))
         .unique();
       if (existing && existing.installationId === installationId) {
         await ctx.db.delete(existing._id);
@@ -312,8 +347,8 @@ export const getDefaultRepositoryForUser = query({
     const userId = identity.id as string;
 
     const repository = await ctx.db
-      .query('remote_repositories')
-      .filter((f) => f.eq(f.field('userId'), userId))
+      .query("remote_repositories")
+      .filter((f) => f.eq(f.field("userId"), userId))
       .first();
 
     return repository;

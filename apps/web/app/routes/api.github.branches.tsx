@@ -1,15 +1,8 @@
-import { api } from "@moru/convex/_generated/api";
-import { App } from "octokit";
 import type { Route } from "./+types/api.github.branches";
 import { authMiddleware } from "~/middlewares/auth-middleware";
 import { convexClientWithAuthMiddleware } from "~/middlewares/convex-client";
 import { convexClientContext } from "~/contexts/convex-client";
-
-function requiredEnv(name: string) {
-  const val = process.env[name];
-  if (!val) throw new Error(`Missing required env: ${name}`);
-  return val;
-}
+import { fetchRepositoryBranches } from "~/lib/github.server";
 
 export const middleware: Route.MiddlewareFunction[] = [
   authMiddleware,
@@ -27,63 +20,16 @@ export async function loader(args: Route.LoaderArgs) {
     return Response.json({ error: "Missing repo_full_name parameter" }, { status: 400 });
   }
 
-  // Parse owner/repo from repo_full_name
-  const parts = repoFullName.split("/");
-  if (parts.length !== 2) {
-    return Response.json({ error: "Invalid repo_full_name format. Expected owner/repo" }, { status: 400 });
-  }
-
-  const [owner, repo] = parts;
-
   try {
-    // Get installation by repoFullName to find the correct installation for this repository
-    const installation = await client.query(api.git.getInstallationByRepoFullName, {
+    const branches = await fetchRepositoryBranches({
+      convexClient: client,
       repoFullName,
     });
 
-    if (!installation) {
-      return Response.json(
-        { error: `Repository ${repoFullName} not found or not accessible` },
-        { status: 404 }
-      );
-    }
-
-    if (!installation.connected) {
-      return Response.json(
-        { error: `GitHub installation for repository ${repoFullName} is not connected` },
-        { status: 404 }
-      );
-    }
-
-    // Initialize Octokit App
-    const appId = requiredEnv("GITHUB_APP_ID");
-    const privateKey = requiredEnv("GITHUB_APP_PRIVATE_KEY").replace(/\\n/g, "\n");
-    const app = new App({ appId, privateKey });
-
-    // Get installation Octokit instance
-    const instOctokit = await app.getInstallationOctokit(Number(installation.installationId));
-
-    // Fetch branches
-    const branches = await instOctokit.paginate(
-      instOctokit.rest.repos.listBranches,
-      {
-        owner,
-        repo,
-        per_page: 100,
-      }
-    );
-
-    // Map branches to response format
-    const mappedBranches = branches.map((branch) => ({
-      name: branch.name,
-      protected: branch.protected ?? false,
-    }));
-
-    return Response.json({ branches: mappedBranches });
+    return Response.json({ branches });
   } catch (error) {
     console.error("Error fetching branches:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return Response.json({ error: `Failed to fetch branches: ${message}` }, { status: 500 });
   }
 }
-
