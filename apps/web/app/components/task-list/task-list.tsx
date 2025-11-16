@@ -69,7 +69,7 @@ export function TaskList() {
           <li key={task.taskId} className="py-1">
             <Link
               to={`/tasks/${task.taskId}`}
-              className="block rounded-2xl px-4 py-3 transition-colors hover:bg-foreground/5 focus-visible:bg-foreground/10 focus-visible:outline-none"
+              className="hover:bg-foreground/5 focus-visible:bg-foreground/10 block rounded-2xl px-4 py-3 transition-colors focus-visible:outline-none"
             >
               <div className="text-base font-semibold">{task.title?.trim() || "Untitled task"}</div>
               <div className="text-muted-foreground text-sm">

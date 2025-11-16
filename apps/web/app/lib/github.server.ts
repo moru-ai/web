@@ -68,7 +68,7 @@ export interface FetchBranchesOptions {
  * @throws Error if repository not found, installation not connected, or GitHub API fails
  */
 export async function fetchRepositoryBranches(
-  options: FetchBranchesOptions
+  options: FetchBranchesOptions,
 ): Promise<GitHubBranch[]> {
   const { convexClient, repoFullName, perPage = 100 } = options;
 
