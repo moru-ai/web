@@ -13,6 +13,14 @@ export const options = {
 
 export default async function serviceApp(fastify: FastifyInstance, opts: FastifyPluginOptions) {
   fastify.register(fastifyAutoload, {
+    dir: path.join(import.meta.dirname, "plugins/external"),
+    maxDepth: 1,
+    indexPattern: /.+/,
+    forceESM: true,
+    options: { ...opts },
+  });
+
+  fastify.register(fastifyAutoload, {
     dir: path.join(import.meta.dirname, "plugins/app"),
     maxDepth: 1,
     indexPattern: /.+/,
