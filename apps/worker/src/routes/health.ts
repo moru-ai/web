@@ -1,9 +1,21 @@
-import { FastifyPluginAsync } from "fastify";
+import { FastifyPluginAsyncTypebox, Type } from "@fastify/type-provider-typebox";
 
-const healthRoute: FastifyPluginAsync = async (fastify) => {
-  fastify.get("/health", async () => {
-    return { ok: true };
-  });
+const healthRoute: FastifyPluginAsyncTypebox = async (fastify) => {
+  fastify.get(
+    "/health",
+    {
+      schema: {
+        response: {
+          200: Type.Object({
+            ok: Type.Boolean(),
+          }),
+        },
+      },
+    },
+    async () => {
+      return { ok: true };
+    },
+  );
 };
 
 export default healthRoute;
