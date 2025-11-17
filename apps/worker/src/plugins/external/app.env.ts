@@ -9,6 +9,7 @@ const schema = Type.Object({
   CONVEX_URL: Type.String(),
   REDIS_URL: Type.String(),
   WORKER_API_KEY: Type.String(),
+  CONVEX_WORKER_API_KEY: Type.String(),
 });
 
 declare module "fastify" {

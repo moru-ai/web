@@ -57,6 +57,7 @@ Additionally, `github_repositories` was renamed to `remote_repositories` and now
 - UI checks: Before and after UI changes, run `pnpm dev:web` and use Playwright MCP to open `http://localhost:5173` and verify affected routes/components.
 - Environment setup: Each app that needs secrets ships a template (for example `.env.example` or `.env.local.example`); copy it to the matching file and fill in local secrets.
 - Worker testing: Convex actions execute in the cloud and cannot call `localhost`, so expose the local worker with `ngrok http 4000` and set `WORKER_URL` (for example via `apps/backend/.env.local` or `convex env set`) to the resulting HTTPS URL before triggering worker-facing actions.
+- Worker↔Convex updates use a dedicated secret (`WORKER_CONVEX_API_KEY` for Convex, `CONVEX_WORKER_API_KEY` for the worker); keep the two values identical and run `pnpm dlx convex env set WORKER_CONVEX_API_KEY <value>` after rotating so public mutations can validate worker calls.
 - Node version: Always `nvm use 22` (Node 22 LTS) before running `pnpm` or `convex` commands; older runtimes break the toolchain.
 
 ## Module Organization

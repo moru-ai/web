@@ -1,8 +1,12 @@
 import { useMemo } from "react";
 import { Link } from "react-router";
+import { CircleCheckIcon, OctagonXIcon, type LucideIcon } from "lucide-react";
 import { api } from "@moru/convex/_generated/api";
+import type { Doc } from "@moru/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
+import { Spinner } from "~/components/ui/spinner";
+import { cn } from "~/lib/utils";
 const skeletonRows = Array.from({ length: 4 }, (_, index) => index);
 
 const RELATIVE_TIME_UNITS: Array<{ max: number; unit: Intl.RelativeTimeFormatUnit; div: number }> =
@@ -71,16 +75,87 @@ export function TaskList() {
               to={`/tasks/${task.taskId}`}
               className="hover:bg-foreground/5 focus-visible:bg-foreground/10 block rounded-2xl px-4 py-3 transition-colors focus-visible:outline-none"
             >
-              <div className="text-base font-semibold">{task.title?.trim() || "Untitled task"}</div>
-              <div className="text-muted-foreground text-sm">
-                {formatRelativeTime(task.createdAt, relativeFormatter)} ·{" "}
-                {task.repoFullName ?? "Unknown repo"} ·{" "}
-                <span className="font-mono text-xs tracking-wide">{task.branch}</span>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <div className="text-base font-semibold">
+                    {task.title?.trim() || "Untitled task"}
+                  </div>
+                  <div className="text-muted-foreground text-sm">
+                    {formatRelativeTime(task.createdAt, relativeFormatter)} ·{" "}
+                    {task.repoFullName ?? "Unknown repo"} ·{" "}
+                    <span className="font-mono text-xs tracking-wide">{task.branch}</span>
+                  </div>
+                </div>
+                <TaskStatusIndicator status={task.status} />
               </div>
             </Link>
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+type TaskStatus = Doc<"tasks">["status"];
+
+type TaskStatusMeta = {
+  label: string;
+  className: string;
+  spinner?: true;
+  icon?: LucideIcon;
+};
+
+const STATUS_META: Record<TaskStatus, TaskStatusMeta> = {
+  initializing: {
+    label: "Initializing",
+    className: "text-muted-foreground",
+    spinner: true,
+  },
+  idle: {
+    label: "Queued",
+    className: "text-muted-foreground",
+    spinner: true,
+  },
+  in_progress: {
+    label: "Running",
+    className: "text-muted-foreground",
+    spinner: true,
+  },
+  success: {
+    label: "Completed",
+    className: "text-success",
+    icon: CircleCheckIcon,
+  },
+  error: {
+    label: "Failed",
+    className: "text-failed",
+    icon: OctagonXIcon,
+  },
+};
+
+function TaskStatusIndicator({ status }: { status: TaskStatus }) {
+  const meta = STATUS_META[status];
+
+  if (!meta) {
+    return null;
+  }
+
+  const showSpinner = Boolean(meta.spinner);
+  const Icon = meta.icon;
+
+  return (
+    <div
+      className={cn(
+        "text-muted-foreground flex shrink-0 items-center gap-1 text-xs font-medium",
+        meta.className,
+      )}
+    >
+      {showSpinner ? (
+        <Spinner className="size-3 text-current" />
+      ) : Icon ? (
+        <Icon className="size-3" aria-hidden="true" />
+      ) : null}
+      <span>{meta.label}</span>
     </div>
   );
 }

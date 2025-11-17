@@ -6,8 +6,10 @@
 - Use Convex mutations for status updates and completion reporting.
 - Ensure Redis connection resiliency and idempotent job handling.
 - `plugins/external/redis.ts` exposes `fastify.redis.connection` plus a shared `fastify.redis.client` (ioredis) and cleans it up on shutdown; reuse these instead of parsing Redis URLs in multiple places.
+- `plugins/external/app.db.ts` decorates `fastify.db.client` with a typed `ConvexHttpClient` so workers can call public Convex mutations; authenticate each call with `CONVEX_WORKER_API_KEY`.
 - `plugins/external/auth.ts` verifies the `Authorization: Bearer <WORKER_API_KEY>` header and decorates `fastify.authenticate` so internal routes can enforce shared-secret auth.
 - Keep the `WORKER_API_KEY` value in `apps/worker/.env` (loaded via `dotenv-safe`) and share the same secret with Convex so enqueue calls succeed.
+- Mirror the same shared secret under `WORKER_CONVEX_API_KEY` (Convex) / `CONVEX_WORKER_API_KEY` (worker) to authorize status updates via `worker:updateTaskStatus`; run `pnpm dlx convex env set WORKER_CONVEX_API_KEY <value>` after generating a new key.
 - `plugins/app/app.queues.ts` exposes `fastify.queues.tasks` so routes can enqueue jobs without recreating BullMQ clients; the plugin closes queues during shutdown.
 - `plugins/app/bull-board.ts` mounts Bull Board at `/bull-board` using the shared BullMQ queues so we can inspect tasks without running a separate process.
 - Exposes `/health` endpoint for readiness probes.

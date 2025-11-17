@@ -70,6 +70,7 @@ export const listTasksForUser = query({
       branch: task.branch,
       createdAt: task.createdAt,
       repoFullName: repoById.get(task.repo)?.fullName ?? null,
+      status: task.status,
     }));
   },
   returns: v.array(
@@ -79,6 +80,13 @@ export const listTasksForUser = query({
       branch: v.string(),
       createdAt: v.number(),
       repoFullName: v.union(v.string(), v.null()),
+      status: v.union(
+        v.literal("initializing"),
+        v.literal("idle"),
+        v.literal("in_progress"),
+        v.literal("success"),
+        v.literal("error"),
+      ),
     }),
   ),
 });
