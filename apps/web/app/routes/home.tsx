@@ -1,18 +1,18 @@
-import type { Route } from './+types/home';
-import { PromptInput } from '~/components/ui/prompt-input';
-import { TaskList, TaskListSkeleton } from '~/components/task-list/task-list';
-import { authMiddleware } from '~/middlewares/auth-middleware';
-import { ErrorBoundary, Suspense } from '@suspensive/react';
-import { Authenticated, AuthLoading } from 'convex/react';
+import type { Route } from "./+types/home";
+import { PromptInput } from "~/components/ui/prompt-input";
+import { TaskList, TaskListSkeleton } from "~/components/task-list/task-list";
+import { authMiddleware } from "~/middlewares/auth-middleware";
+import { ErrorBoundary, Suspense } from "@suspensive/react";
+import { Authenticated, AuthLoading } from "convex/react";
 
 export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 export function meta() {
   return [
-    { title: 'Moru — Launch Coding Agents' },
+    { title: "Moru — Launch Coding Agents" },
     {
-      name: 'description',
-      content: 'Kick off AI-driven coding tasks, monitor queues, and prepare production-ready PRs.',
+      name: "description",
+      content: "Kick off AI-driven coding tasks, monitor queues, and prepare production-ready PRs.",
     },
   ];
 }

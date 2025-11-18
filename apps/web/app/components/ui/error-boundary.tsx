@@ -38,10 +38,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <div className="text-destructive p-4 text-sm">
           <p className="font-medium">Something went wrong</p>
           <p className="text-muted-foreground mt-1">{this.state.error.message}</p>
-          <button
-            onClick={this.reset}
-            className="hover:text-destructive/80 mt-2 text-xs underline"
-          >
+          <button onClick={this.reset} className="hover:text-destructive/80 mt-2 text-xs underline">
             Try again
           </button>
         </div>

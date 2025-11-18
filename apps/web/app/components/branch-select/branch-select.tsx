@@ -125,7 +125,11 @@ export function BranchSelect({ repoFullName, onSelect }: BranchSelectProps) {
                     </div>
                   }
                 >
-                  <BranchListContent repoFullName={repoFullName} value={value} onSelect={handleSelect} />
+                  <BranchListContent
+                    repoFullName={repoFullName}
+                    value={value}
+                    onSelect={handleSelect}
+                  />
                 </Suspense>
               </ErrorBoundary>
             )}

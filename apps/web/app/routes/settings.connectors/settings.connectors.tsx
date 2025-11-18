@@ -1,6 +1,6 @@
 import { ErrorBoundary, Suspense } from "@suspensive/react";
 import { authMiddleware } from "~/middlewares/auth-middleware";
-import type { Route } from "../+types/settings.connectors";
+import type { Route } from "./+types/settings.connectors";
 import { GitHubCard } from "./components/github-card/github-card";
 import { GitHubCardSkeleton } from "./components/github-card/github-card-skeleton";
 import { GitHubCardError } from "./components/github-card/github-card-error";

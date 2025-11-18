@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { getUserIdentityOrThrow } from "./auth.helper";
 
 export const createTask = mutation({
@@ -16,7 +17,7 @@ export const createTask = mutation({
       title: args.prompt.slice(0, 100),
       repo: args.repo,
       branch: args.branch,
-      status: "idle",
+      status: "initializing",
       createdAt: Date.now(),
       metadata: {},
       userId,
@@ -37,6 +38,10 @@ export const createTask = mutation({
         name: null,
         metadata: {},
       },
+    });
+
+    await ctx.scheduler.runAfter(0, internal.worker.insertTaskJob, {
+      taskId: taskId,
     });
 
     return taskId;
@@ -65,6 +70,7 @@ export const listTasksForUser = query({
       branch: task.branch,
       createdAt: task.createdAt,
       repoFullName: repoById.get(task.repo)?.fullName ?? null,
+      status: task.status,
     }));
   },
   returns: v.array(
@@ -74,6 +80,13 @@ export const listTasksForUser = query({
       branch: v.string(),
       createdAt: v.number(),
       repoFullName: v.union(v.string(), v.null()),
+      status: v.union(
+        v.literal("initializing"),
+        v.literal("idle"),
+        v.literal("in_progress"),
+        v.literal("success"),
+        v.literal("error"),
+      ),
     }),
   ),
 });

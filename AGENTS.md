@@ -37,6 +37,12 @@ Note: GitHub integration schema was simplified — `github_connections` has been
 
 Additionally, `github_repositories` was renamed to `remote_repositories` and now includes `provider: 'github'`. Backend queries/mutations and web/worker Doc types were updated accordingly.
 
+### Post-change Validation
+
+1. After every code change, run `pnpm lint` and `pnpm typecheck` from the repo root.
+2. Fix issues and rerun both commands until they pass cleanly.
+3. Once checks pass, run `pnpm format` to normalize files before committing.
+
 ### Adding Dependencies
 
 - **Workspace-wide tools** (eslint, prettier, typescript): `pnpm add -Dw <package>`
@@ -50,6 +56,8 @@ Additionally, `github_repositories` was renamed to `remote_repositories` and now
 - All dev tools (ESLint, Prettier, TypeScript) are installed at root only
 - UI checks: Before and after UI changes, run `pnpm dev:web` and use Playwright MCP to open `http://localhost:5173` and verify affected routes/components.
 - Environment setup: Each app that needs secrets ships a template (for example `.env.example` or `.env.local.example`); copy it to the matching file and fill in local secrets.
+- Worker testing: Convex actions execute in the cloud and cannot call `localhost`, so expose the local worker with `ngrok http 4000` and set `WORKER_URL` (for example via `apps/backend/.env.local` or `convex env set`) to the resulting HTTPS URL before triggering worker-facing actions.
+- Worker↔Convex updates use a dedicated secret (`WORKER_CONVEX_API_KEY` for Convex, `CONVEX_WORKER_API_KEY` for the worker); keep the two values identical and run `pnpm dlx convex env set WORKER_CONVEX_API_KEY <value>` after rotating so public mutations can validate worker calls.
 - Node version: Always `nvm use 22` (Node 22 LTS) before running `pnpm` or `convex` commands; older runtimes break the toolchain.
 
 ## Module Organization
@@ -112,8 +120,7 @@ After: [Use context7 to fetch Fastify docs] → Confirm actual API
 
 ### Linting & Formatting
 
-- After making code changes, run `pnpm lint` and `pnpm format` from the repo root
-- Run `pnpm lint` before committing
+- Follow the Post-change Validation workflow above (`pnpm lint`, `pnpm typecheck`, then `pnpm format`)
 - ESLint config at root: `eslint.config.cjs`
 - Prettier config at root: `prettier.config.cjs`
 - `.prettierignore` excludes `apps/backend/convex/_generated` so Convex artifacts stay untouched
@@ -125,6 +132,14 @@ After: [Use context7 to fetch Fastify docs] → Confirm actual API
 - Never use `any` without explicit reason
 - Leverage Convex codegen for end-to-end type safety
 - Web and worker import backend `_generated` artifacts via aliases so type definitions remain in sync
+- Lean on TypeScript inference whenever possible—avoid explicit return type annotations and `as` assertions unless you've tried at least three alternative shapes and the compiler still needs help
+- Skip redundant variable annotations—prefer `const hello = "world"` over `const hello: string = "world"` unless inference truly fails
+- After each task that changes code, immediately run `pnpm typecheck` so regressions surface early
+
+```ts
+const hello = "world"; // ✅ inferred string
+const helloTyped: string = "world"; // ❌ avoid unless inference fails
+```
 
 ### Code Style
 

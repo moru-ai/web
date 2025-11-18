@@ -1,0 +1,34 @@
+import path from "node:path";
+import fastifyAutoload from "@fastify/autoload";
+import { FastifyInstance, FastifyPluginOptions } from "fastify";
+
+export const options = {
+  ajv: {
+    customOptions: {
+      coerceTypes: "array",
+      removeAdditional: "all",
+    },
+  },
+};
+
+export default async function serviceApp(fastify: FastifyInstance, opts: FastifyPluginOptions) {
+  fastify.register(fastifyAutoload, {
+    dir: path.join(import.meta.dirname, "plugins/external"),
+    forceESM: true,
+    options: { ...opts },
+  });
+
+  fastify.register(fastifyAutoload, {
+    dir: path.join(import.meta.dirname, "plugins/app"),
+    forceESM: true,
+    options: { ...opts },
+  });
+
+  fastify.register(fastifyAutoload, {
+    dir: path.join(import.meta.dirname, "routes"),
+    autoHooks: true,
+    cascadeHooks: true,
+    forceESM: true,
+    options: { ...opts },
+  });
+}

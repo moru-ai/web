@@ -128,8 +128,10 @@ import { api } from "@moru/convex/_generated/api";
 export function MyPaginatedComponent() {
   const { results, status, loadMore } = usePaginatedQuery(
     api.myQuery.paginated,
-    { /* args */ },
-    { initialNumItems: 20 }
+    {
+      /* args */
+    },
+    { initialNumItems: 20 },
   );
 
   // Handle loading state
@@ -143,10 +145,10 @@ export function MyPaginatedComponent() {
   // Render data
   return (
     <div>
-      {results.map(item => <div key={item._id}>{item.name}</div>)}
-      {status === "CanLoadMore" && (
-        <button onClick={() => loadMore(10)}>Load More</button>
-      )}
+      {results.map((item) => (
+        <div key={item._id}>{item.name}</div>
+      ))}
+      {status === "CanLoadMore" && <button onClick={() => loadMore(10)}>Load More</button>}
     </div>
   );
 }
@@ -184,7 +186,9 @@ function MyDataList({ externalId }: { externalId: string }) {
 
   return (
     <div>
-      {items.map(item => <div key={item.id}>{item.name}</div>)}
+      {items.map((item) => (
+        <div key={item.id}>{item.name}</div>
+      ))}
       {isFetchingNextPage && <Spinner />}
     </div>
   );
@@ -200,6 +204,7 @@ export function MyComponent({ externalId }: { externalId: string }) {
 ```
 
 **Why use TanStack Query for API route calls:**
+
 - **Better Caching**: TanStack Query provides sophisticated caching strategies for API data
 - **Automatic Retries**: Built-in retry logic for failed requests
 - **Request Deduplication**: Multiple components requesting the same data only trigger one network request
@@ -207,9 +212,11 @@ export function MyComponent({ externalId }: { externalId: string }) {
 - **Server-Side Authentication**: API routes handle authentication and external API calls securely
 
 **When to use:**
+
 - Fetching data from external APIs (GitHub, etc.) through our API routes
 - Data that changes frequently and benefits from caching strategies
 - Components that need to fetch data that requires server-side authentication
 
 **Components using this pattern:**
+
 - **[branch-select.tsx](app/components/branch-select/branch-select.tsx)**: Branch dropdown (fetches from GitHub API via `/api/github/branches` route)

@@ -3,6 +3,14 @@ import { v } from "convex/values";
 
 const commonMetadata = v.optional(v.record(v.string(), v.any()));
 
+export const taskStatusField = v.union(
+  v.literal("initializing"),
+  v.literal("idle"),
+  v.literal("in_progress"),
+  v.literal("success"),
+  v.literal("error"),
+);
+
 const contentText = v.object({
   contentType: v.literal("text"),
   parts: v.array(v.string()),
@@ -15,13 +23,7 @@ export default defineSchema({
     repo: v.id("remote_repositories"),
     branch: v.string(),
     userId: v.string(),
-    status: v.union(
-      v.literal("initializing"),
-      v.literal("idle"),
-      v.literal("in_progress"),
-      v.literal("success"),
-      v.literal("error"),
-    ),
+    status: taskStatusField,
     metadata: commonMetadata,
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
