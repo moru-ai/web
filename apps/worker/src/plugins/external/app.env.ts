@@ -10,6 +10,7 @@ const schema = Type.Object({
   REDIS_URL: Type.String(),
   WORKER_API_KEY: Type.String(),
   CONVEX_WORKER_API_KEY: Type.String(),
+  DOCKER_SOCKET_PATH: Type.Optional(Type.String()),
 });
 
 declare module "fastify" {
